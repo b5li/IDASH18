@@ -52,7 +52,7 @@ new:
 ###############################################################
 
 test:
-	g++ -std=c++11 -O2 -I/usr/local/include -pthread main.cpp ../lib/libHEAAN.a libHEGWAS.a -o foo -L/usr/local/lib -lntl -lgmp -lm
+	g++ -std=c++11 -O2 -I/usr/local/include -pthread main.cpp libHEGWAS.a -o foo -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
 
 
 obj: $(OBJ)
