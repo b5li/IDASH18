@@ -10,6 +10,8 @@
 #include "TestPvals.h"
 #include "TestHEPvals.h"
 
+#include "sys.h"
+
 using namespace std;
 using namespace NTL;
 
@@ -90,7 +92,15 @@ int main(int argc, char **argv) {
     
     cout << "Error (TP, FP, FN, TN) of pt/ct : " ;
     cout << TP << "," <<  FP << ","  << FN << "," << TN << endl;
- 
+
+    MemoryUsage mem = getMemoryUsage();
+
+    cout << "+------------------------------------+" << endl;
+    cout << "|            Quality Check           |" << endl;
+    cout << "+------------------------------------+" << endl;
+
+    cout << "Peak memory = " << mem.vmpeak/1024 << std::endl;
+    cout << "Curr memory = " << mem.vmrss/1024 << std::endl;
 
 	return 0;
 }
