@@ -12,6 +12,8 @@
 #include <fstream>
 #include <sstream>
 
+#include <thread>
+
 #include "NTL/ZZX.h"
 #include <NTL/RR.h>
 #include "NTL/vec_RR.h"
@@ -127,16 +129,20 @@ void TestHEPvals::testHELinReg(double*& zScore, double*& pVals, double* yData, d
     Ciphertext* encYS = new Ciphertext[nencsnp];
     Ciphertext* encS = new Ciphertext[nencsnp];
     
+#ifdef STDTHREAD
+
+#else
     NTL_EXEC_RANGE(nencsnp, first, last);
     for(long j = first; j < last; ++j){
-        encYS[j] = encYSData[0][j];
-        encS[j] = encSData[0][j];
-        for(long i = 1; i < sampleDim; ++i){
-            scheme.addAndEqual(encYS[j], encYSData[i][j]);
-            scheme.addAndEqual(encS[j], encSData[i][j]);
-        }
+       encYS[j] = encYSData[0][j];
+       encS[j] = encSData[0][j];
+       for(long i = 1; i < sampleDim; ++i){
+          scheme.addAndEqual(encYS[j], encYSData[i][j]);
+          scheme.addAndEqual(encS[j], encSData[i][j]);
+       }
     }
     NTL_EXEC_RANGE_END;
+#endif
     
     //! encYX[k] = YXvec = y^T * X[k] = [-29, -6.506140997, -6.368385672, -12.88024343]
     //! encSX[factorDim][nencsnp]
@@ -144,6 +150,9 @@ void TestHEPvals::testHELinReg(double*& zScore, double*& pVals, double* yData, d
     Ciphertext* encYX = new Ciphertext[factorDim];
     Ciphertext** encSX = new Ciphertext*[factorDim];
     
+#ifdef STDTHREAD
+
+#else
     NTL_EXEC_RANGE(factorDim, first, last);
     for(long k = first; k < last; ++k){
         encYX[k] = encYXData[0][k];
@@ -159,6 +168,7 @@ void TestHEPvals::testHELinReg(double*& zScore, double*& pVals, double* yData, d
         }
     }
     NTL_EXEC_RANGE_END;
+#endif
     
 #if  defined(__DEBUG_)
     for(long k = 0; k < 4; ++k){
@@ -208,6 +218,9 @@ void TestHEPvals::testHELinReg(double*& zScore, double*& pVals, double* yData, d
     Ciphertext* encWtSS  = new Ciphertext[nencsnp];
     Ciphertext* encSnorm = new Ciphertext[nencsnp];
     
+#ifdef STDTHREAD
+
+#else
     NTL_EXEC_RANGE(nencsnp, first, last);
     for(long j = first; j < last; ++j){
         Ciphertext* encSX1 = new Ciphertext[factorDim];
@@ -228,6 +241,7 @@ void TestHEPvals::testHELinReg(double*& zScore, double*& pVals, double* yData, d
         scheme.subAndEqual(encSnorm[j], encWtSS[j]);
     }
     NTL_EXEC_RANGE_END;
+#endif
     
     end = std::chrono::steady_clock::now();
     diff = end - start;
@@ -257,6 +271,9 @@ void TestHEPvals::testHELinReg(double*& zScore, double*& pVals, double* yData, d
     zScore = new double[nsnp];   //! absolute value of beta/sigma
     pVals = new double[nsnp];
     
+#ifdef STDTHREAD
+
+#else
     NTL_EXEC_RANGE(nencsnp, first, last);
     for(long j = first; j < last; ++j){
         double* YSnorm;
@@ -281,6 +298,7 @@ void TestHEPvals::testHELinReg(double*& zScore, double*& pVals, double* yData, d
         }
     }
     NTL_EXEC_RANGE_END;
+#endif
     
     end = std::chrono::steady_clock::now();
     diff = end - start;
