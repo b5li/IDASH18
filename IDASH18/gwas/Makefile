@@ -7,7 +7,7 @@
 PREFIX = $(HOME)
 CC = g++
 AR = ar
-CFLAGS= -g -O2 -std=c++11 -pthread
+CFLAGS= -g -O0 -std=c++11 -pthread
 
 # path to the library files
 LDLIBS  = -L/usr/local/lib -lntl -lgmp -lm  
@@ -23,7 +23,7 @@ LIBS    = -lntl -lm
 #
 ###############################################################
 
-HEADER = Database.h  BasicTest.h TestPvals.h CipherPvals.h TestHEPvals.h
+HEADER = Database.h  BasicTest.h TestPvals.h CipherPvals.h TestHEPvals.h threadpool.h
 
 SRC = $(HEADER:.h=.cpp)   
 
@@ -52,7 +52,7 @@ new:
 ###############################################################
 
 test:
-	g++ -std=c++11 -O2 -I/usr/local/include -pthread main.cpp sys.cpp libHEGWAS.a -o foo -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
+	g++ -std=c++11 -O0 -I/usr/local/include -pthread main.cpp sys.cpp libHEGWAS.a -o foo -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
 
 
 obj: $(OBJ)

@@ -14,11 +14,11 @@
 
 #include <thread>
 
-#include "NTL/ZZX.h"
-#include <NTL/RR.h>
-#include "NTL/vec_RR.h"
-#include "NTL/mat_RR.h"
-#include <NTL/BasicThreadPool.h>
+// #include "NTL/ZZX.h"
+// #include <NTL/RR.h>
+// #include "NTL/vec_RR.h"
+// #include "NTL/mat_RR.h"
+// #include <NTL/BasicThreadPool.h>
 
 #include "../src/Ciphertext.h"
 #include "../src/Context.h"
@@ -32,9 +32,9 @@
 #include "BasicTest.h"
 #include "TestPvals.h"
 #include "CipherPvals.h"
+#include "threadpool.h"
 
 //! return the covariance matrix of size d * d
-
 
 
 //!@ encrypt an input value and generate a fully-packed ciphertext
@@ -42,32 +42,24 @@
 void CipherPvals::encValue(Ciphertext& encData, double data,  long nslots, long L){
     complex<double>* cmsg = new complex<double>[nslots];
 
-#ifdef STDTHREAD
-
-#else
-    NTL_EXEC_RANGE(nslots, first, last);
+    TP_EXEC_RANGE(nslots, first, last);
     for(int l = first; l < last; ++l){
         cmsg[l].real(data);
     }
-    NTL_EXEC_RANGE_END;
+    TP_EXEC_RANGE_END;
     encData = scheme.encrypt(cmsg, nslots, L);
     delete[] cmsg;
-#endif
 }
 
 void CipherPvals::encFullyPackedVec(Ciphertext& encData, double* data, long nslots, long L){
     complex<double>* cmsg = new complex<double>[nslots];
-#ifdef STDTHREAD
-
-#else
-    NTL_EXEC_RANGE(nslots, first, last);
+    TP_EXEC_RANGE(nslots, first, last);
     for(int l = first; l < last; ++l){
         cmsg[l].real(data[l]);
     }
-    NTL_EXEC_RANGE_END;
+    TP_EXEC_RANGE_END;
     encData = scheme.encrypt(cmsg, nslots, L);
     delete[] cmsg;
-#endif
 }
 
 //!@ Input: data with a length "len"
@@ -75,17 +67,13 @@ void CipherPvals::encFullyPackedVec(Ciphertext& encData, double* data, long nslo
 
 void CipherPvals::encSparselyPackedVec(Ciphertext& encData, double* data, long len, long nslots, long L){
     complex<double>* cmsg = new complex<double>[nslots];
-#ifdef STDTHREAD
-
-#else
-    NTL_EXEC_RANGE(len, first, last);
+    TP_EXEC_RANGE(len, first, last);
     for(int l = first; l < last; ++l){
         cmsg[l].real(data[l]);
     }
-    NTL_EXEC_RANGE_END;
+    TP_EXEC_RANGE_END;
     encData = scheme.encrypt(cmsg, nslots, L);
     delete[] cmsg;
-#endif
 }
 
 
@@ -122,10 +110,8 @@ void CipherPvals::encryptXData(Ciphertext**& encYXData, Ciphertext**& enccovData
 
     double*** temp = new double**[sampleDim];
     double** xiData = new double*[sampleDim];
-#ifdef STDTHREAD
 
-#else
-    NTL_EXEC_RANGE(sampleDim, first, last);
+    TP_EXEC_RANGE(sampleDim, first, last);
     for (long i = first; i < last; ++i) {
         if(yData[i] == 1){
             for(long k = 0; k < factorDim; ++k){
@@ -151,8 +137,7 @@ void CipherPvals::encryptXData(Ciphertext**& encYXData, Ciphertext**& enccovData
    
         
     }
-    NTL_EXEC_RANGE_END;
-#endif
+    TP_EXEC_RANGE_END;
     
     delete[] temp;
     delete[] xiData;
@@ -172,10 +157,7 @@ void CipherPvals::encryptSData(Ciphertext**& encSData, Ciphertext**& encYSData, 
     double** fullvec = new double*[sampleDim];
     double** sparsevec = new double*[sampleDim];
     
-#ifdef STDTHREAD
-
-#else
-    NTL_EXEC_RANGE(sampleDim, first, last);
+    TP_EXEC_RANGE(sampleDim, first, last);
     for (long i = first; i < last; ++i) {
         fullvec[i] = new double[nslots];
         sparsevec[i] = new double[nslots1];
@@ -256,8 +238,7 @@ void CipherPvals::encryptSData(Ciphertext**& encSData, Ciphertext**& encYSData, 
             encSparselyPackedVec(encSXData[i][k][nencsnp-1], sparsevec[i], nslots1, nslots, L);
         }
     }
-    NTL_EXEC_RANGE_END;
-#endif
+    TP_EXEC_RANGE_END;
     
     delete[] scaled_sData;
     delete[] sxData;
@@ -273,10 +254,7 @@ void CipherPvals::QuadForm(Ciphertext& res, Ciphertext* encData1, Ciphertext* en
     // 2: 2 5 7 8
     // 3: 3 6 8 9
     
-#ifdef STDTHREAD
-
-#else
-    NTL_EXEC_RANGE(factorDim, first, last);
+    TP_EXEC_RANGE(factorDim, first, last);
     for(long i = first; i< last; ++i){
         tensoring[i] = new Ciphertext[factorDim];
         
@@ -323,8 +301,7 @@ void CipherPvals::QuadForm(Ciphertext& res, Ciphertext* encData1, Ciphertext* en
             scheme.addAndEqual(tensoring[i][0], tensoring[i][j]);
         }
     }
-    NTL_EXEC_RANGE_END;
-#endif
+    TP_EXEC_RANGE_END;
     
     res = tensoring[0][0];
     for(long i = 1; i < factorDim; ++i){
@@ -339,10 +316,7 @@ void CipherPvals::QuadForm(Ciphertext& res, Ciphertext* encData1, Ciphertext* en
 void CipherPvals::SqrQuadForm(Ciphertext& res, Ciphertext* encData, Ciphertext* encMatrix, long factorDim){
     Ciphertext** tensoring = new Ciphertext*[factorDim];
     
-#ifdef STDTHREAD
-
-#else
-    NTL_EXEC_RANGE(factorDim, first, last);
+    TP_EXEC_RANGE(factorDim, first, last);
     for(int i = first; i< last; ++i){
         tensoring[i] = new Ciphertext[factorDim];
         
@@ -392,19 +366,14 @@ void CipherPvals::SqrQuadForm(Ciphertext& res, Ciphertext* encData, Ciphertext* 
             scheme.addAndEqual(tensoring[i][i+1], tensoring[i][j]);
         }
     }
-    NTL_EXEC_RANGE_END;
-#endif
+    TP_EXEC_RANGE_END;
     
-#ifdef STDTHREAD
-
-#else
-    NTL_EXEC_RANGE(factorDim - 1, first, last);
+    TP_EXEC_RANGE(factorDim - 1, first, last);
     for(int i = first; i< last; ++i){
         scheme.addAndEqual(tensoring[i][i], tensoring[i][i+1]);
         scheme.addAndEqual(tensoring[i][i], tensoring[i][i+1]);
     }
-    NTL_EXEC_RANGE_END;
-#endif
+    TP_EXEC_RANGE_END;
     
     res = tensoring[0][0];
     for(long i = 1; i < factorDim; ++i){

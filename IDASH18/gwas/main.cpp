@@ -1,5 +1,5 @@
 
-#include <NTL/BasicThreadPool.h>
+// #include <NTL/BasicThreadPool.h>
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
@@ -9,7 +9,7 @@
 #include "BasicTest.h"
 #include "TestPvals.h"
 #include "TestHEPvals.h"
-
+#include "threadpool.h"
 #include "sys.h"
 
 using namespace std;
@@ -22,8 +22,8 @@ using namespace NTL;
 
 int main(int argc, char **argv) {
 	
-	SetNumThreads(4);
-    
+	// SetNumThreads(4);
+    initThreadPool(4);
 
 	string covariate_filename(argv[1]);     // path to covariate file
     string snp_filename(argv[2]);           // path to snp file
