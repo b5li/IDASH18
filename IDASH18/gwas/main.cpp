@@ -1,15 +1,19 @@
 
-// #include <NTL/BasicThreadPool.h>
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
 #include <string>
 
+#ifdef USE_NTL
+#include <NTL/BasicThreadPool.h>
+#endif
+#include "threadpool.h"
+
 #include "Database.h"
 #include "BasicTest.h"
 #include "TestPvals.h"
 #include "TestHEPvals.h"
-#include "threadpool.h"
+
 #include "sys.h"
 
 using namespace std;
@@ -22,8 +26,11 @@ using namespace NTL;
 
 int main(int argc, char **argv) {
 	
-	// SetNumThreads(4);
-    initThreadPool(4);
+#ifdef USE_NTL
+    SetNumThreads(8);
+#else
+    IDASH::initThreadPool(8);
+#endif
 
 	string covariate_filename(argv[1]);     // path to covariate file
     string snp_filename(argv[2]);           // path to snp file
@@ -99,8 +106,8 @@ int main(int argc, char **argv) {
     cout << "|            Quality Check           |" << endl;
     cout << "+------------------------------------+" << endl;
 
-    cout << "Peak memory = " << mem.vmpeak/1024 << std::endl;
-    cout << "Curr memory = " << mem.vmrss/1024 << std::endl;
+    cout << "Peak memory = " << mem.vmpeak/1024 << "KB" << std::endl;
+    cout << "Curr memory = " << mem.vmrss/1024  << "KB" << std::endl;
 
 	return 0;
 }

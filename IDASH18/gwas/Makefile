@@ -7,10 +7,10 @@
 PREFIX = $(HOME)
 CC = g++
 AR = ar
-CFLAGS= -g -O0 -std=c++11 -pthread
+CFLAGS= -O3 -std=c++11 -pthread $(TPFLAGS)
 
 # path to the library files
-LDLIBS  = -L/usr/local/lib -lntl -lgmp -lm  
+LDLIBS  = -L/usr/local/lib -lntl -lgmp -lm
 
 # link in a library       
 LDFLAGS = -I/usr/local/include      
@@ -52,7 +52,7 @@ new:
 ###############################################################
 
 test:
-	g++ -std=c++11 -O0 -I/usr/local/include -pthread main.cpp sys.cpp libHEGWAS.a -o foo -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
+	g++ -std=c++11 -O3 -I/usr/local/include $(TPFLAGS) -pthread main.cpp sys.cpp libHEGWAS.a -o foo -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
 
 
 obj: $(OBJ)

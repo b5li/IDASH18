@@ -12,13 +12,11 @@
 #include <fstream>
 #include <sstream>
 
-#include <thread>
+#ifdef USE_NTL
+#include <NTL/BasicThreadPool.h>
+#endif
 
-// #include "NTL/ZZX.h"
-// #include <NTL/RR.h>
-// #include "NTL/vec_RR.h"
-// #include "NTL/mat_RR.h"
-// #include <NTL/BasicThreadPool.h>
+#include "threadpool.h"
 
 #include "../src/Ciphertext.h"
 #include "../src/Context.h"
@@ -32,7 +30,6 @@
 #include "BasicTest.h"
 #include "TestPvals.h"
 #include "CipherPvals.h"
-#include "threadpool.h"
 
 //! return the covariance matrix of size d * d
 
