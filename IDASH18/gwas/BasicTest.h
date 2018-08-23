@@ -23,6 +23,8 @@
 using namespace std;
 using namespace NTL;
 
+void calculateAdjoint(double*& res, double& det, double* x, long scalefactor);
+
 
 double trueIP(double* a, double* b, long size);
 

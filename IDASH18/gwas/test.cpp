@@ -1,19 +1,14 @@
+
+#include <NTL/BasicThreadPool.h>
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
 #include <string>
 
-#ifdef USE_NTL
-#include <NTL/BasicThreadPool.h>
-#endif
-#include "threadpool.h"
-
 #include "Database.h"
 #include "BasicTest.h"
 #include "TestPvals.h"
 #include "TestHEPvals.h"
-
-#include "sys.h"
 
 using namespace std;
 using namespace NTL;
@@ -22,16 +17,38 @@ using namespace NTL;
  *  make new
  * ./foo "idashdata/covariates.txt" "idashdata/snpMat.txt"
  */
-// NTL_EXEC_RANGE(nterms, first, last);
-// TP_EXEC_RANGE(nterms, first, last);
 
 int main(int argc, char **argv) {
-   int numThreads; sscanf(argv[3],"%d",&numThreads);
-#ifdef USE_NTL
-    SetNumThreads(8);
-#else
-    IDASH::initThreadPool(numThreads);
-#endif
+	
+	SetNumThreads(4);
+
+    double mat[4][4]= {
+        {245,    91.2656,    95.2424,    118.426},
+        {91.266,    39.676,    35.419,    43.986},
+        {95.242,    35.419,    41.462,    48.285},
+        {118.426,    43.986,    48.285,    61.487},
+    };
+    double det = 19152.84924;
+    double scalefactor = 32.0;
+    
+    double* x = new double[10];
+    double* res;
+    double det1;
+    
+    long k = 0;
+    for(long i = 0; i < 4; ++i){
+        for(long j = i;  j < 4; ++j){
+            x[k] = mat[i][j]/scalefactor;
+            k++;
+            
+        }
+    }
+    calculateAdjoint(res, det1, x, scalefactor);
+    
+    
+    
+#if 0
+
 	string covariate_filename(argv[1]);     // path to covariate file
     string snp_filename(argv[2]);           // path to snp file
     
@@ -81,7 +98,7 @@ int main(int argc, char **argv) {
  
     TestHEPvals::testHELinReg(zScore_ct, pVals_ct, yData, xData, sData, factorDim, sampleDim, nsnp,  "Result/HEpvals.txt");
 
- 
+
  
     cout << "+------------------------------------+" << endl;
     cout << "|            Quality Check           |" << endl;
@@ -99,15 +116,7 @@ int main(int argc, char **argv) {
     
     cout << "Error (TP, FP, FN, TN) of pt/ct : " ;
     cout << TP << "," <<  FP << ","  << FN << "," << TN << endl;
- 
-    MemoryUsage mem = getMemoryUsage();
-    
-    cout << "+------------------------------------+" << endl;
-    cout << "|            Memory Usage            |" << endl;
-    cout << "+------------------------------------+" << endl;
-    
-    cout << "Peak memory = " << mem.vmpeak/1024 << "KB" << std::endl;
-    cout << "Curr memory = " << mem.vmrss/1024  << "KB" << std::endl;
-    
+#endif
+
 	return 0;
 }

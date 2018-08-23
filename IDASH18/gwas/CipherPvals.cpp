@@ -18,6 +18,7 @@
 
 #include "threadpool.h"
 
+
 #include "../src/Ciphertext.h"
 #include "../src/Context.h"
 #include "../src/Scheme.h"
@@ -31,14 +32,17 @@
 #include "TestPvals.h"
 #include "CipherPvals.h"
 
+
+
+
 //! return the covariance matrix of size d * d
+
 
 
 //!@ encrypt an input value and generate a fully-packed ciphertext
 //!@ Output: E(data, ..., data)
 void CipherPvals::encValue(Ciphertext& encData, double data,  long nslots, long L){
     complex<double>* cmsg = new complex<double>[nslots];
-
     TP_EXEC_RANGE(nslots, first, last);
     for(int l = first; l < last; ++l){
         cmsg[l].real(data);
@@ -89,12 +93,13 @@ void CipherPvals::decVector(double*& Data, Ciphertext encData, long len){
     delete[] dcw;
 }
 
-void CipherPvals::computeCov(double**& covariance, double* data, long dim){
-    covariance = new double*[dim];
+//! nterms = 10
+void CipherPvals::computeCov(double*& covariance, double* data, long dim, long nterms, long scalefactor){
+    long k = 0;
     for(long i = 0; i < dim; ++i){
-        covariance[i] = new double[dim];
-        for(long j = 0; j < dim; ++j){
-            covariance[i][j] = data[i] * data[j];
+        for(long j = i; j < dim; ++j){
+            covariance[k] = (data[i] * data[j])/scalefactor;
+            k++;
         }
     }
 }
@@ -102,24 +107,22 @@ void CipherPvals::computeCov(double**& covariance, double* data, long dim){
  
 
 //! encYXData[i][k]: = Enc(y[i] * xDta[i][k]), 0 <= i <n
+//! encCovData[i][k] = Enc(cov_i[k]) (10s)
 
-void CipherPvals::encryptXData(Ciphertext**& encYXData, Ciphertext**& enccovData, double* yData, double** xData, long factorDim, long sampleDim, long dim, long nslots, long L) {
+void CipherPvals::encryptXData(Ciphertext**& encYXData, Ciphertext**& enccovData, double* yData, double** xData, long factorDim, long sampleDim, long dim, long nterms, long scalefactor, long nslots, long L) {
 
-    double*** temp = new double**[sampleDim];
+    double** cov = new double*[sampleDim];
     double** xiData = new double*[sampleDim];
-
     TP_EXEC_RANGE(sampleDim, first, last);
     for (long i = first; i < last; ++i) {
         if(yData[i] == 1){
             for(long k = 0; k < factorDim; ++k){
                 encValue(encYXData[i][k], xData[i][k], nslots, L);
-                //scaled_xData1[i][k] = xData[i][k];
             }
         }
         else{
             for(long k = 0; k < factorDim; ++k){
                 encValue(encYXData[i][k], - xData[i][k], nslots, L);
-                //scaled_xData1[i][k] = - xData[i][k];
             }
         }
         
@@ -130,15 +133,23 @@ void CipherPvals::encryptXData(Ciphertext**& encYXData, Ciphertext**& enccovData
         for(long k = factorDim; k < dim; ++k){
             xiData[i][k] = 0.0;
         }
-        computeCov(temp[i], xiData[i], dim);  //! dim -> dim * dim
+        cov[i] = new double[nterms];
+        computeCov(cov[i], xiData[i], dim, nterms, scalefactor);  //! dim -> dim * (dim-1)/2
    
-        
+        for(long k = 0; k < nterms; ++k){
+            encValue(enccovData[i][k], cov[i][k], nslots, L);
+        }
     }
     TP_EXEC_RANGE_END;
+
+    for(long i = 0; i < sampleDim; i++) {
+       delete[] xiData[i];
+       delete[] cov[i];
+    }
     
-    delete[] temp;
+    delete[] cov;
     delete[] xiData;
-    //delete[] scaled_xData1;
+
 }
 
 
@@ -164,14 +175,14 @@ void CipherPvals::encryptSData(Ciphertext**& encSData, Ciphertext**& encYSData, 
         //! full slot
         for(long j = 0; j < nencsnp - 1; ++j){
             for(long l = 0; l < nslots; ++l){
-                fullvec[i][l] = sData[i][j1];
+                fullvec[i][l] = sData[i][j1] ;
                 j1++;
             }
             encFullyPackedVec(encSData[i][j], fullvec[i], nslots, L);
         }
         //! not full slot
         for(long l = 0; l < nslots1; ++l){
-            sparsevec[i][l] = sData[i][j1];
+            sparsevec[i][l] = sData[i][j1] ;
             j1++;
         }
         encSparselyPackedVec(encSData[i][nencsnp-1], sparsevec[i], nslots1, nslots, L);
@@ -183,14 +194,14 @@ void CipherPvals::encryptSData(Ciphertext**& encSData, Ciphertext**& encYSData, 
             //! full slot
             for(long j = 0; j < nencsnp - 1; ++j){
                 for(long l = 0; l < nslots; ++l){
-                    fullvec[i][l] = sData[i][j1];
+                    fullvec[i][l] = sData[i][j1] ;
                     j1++;
                 }
                 encFullyPackedVec(encYSData[i][j], fullvec[i], nslots, L);
             }
             //! not full slot
             for(long l = 0; l < nslots1; ++l){
-                sparsevec[i][l] = sData[i][j1];
+                sparsevec[i][l] = sData[i][j1] ;
                 j1++;
             }
             encSparselyPackedVec(encYSData[i][nencsnp-1], sparsevec[i], nslots1, nslots, L);
@@ -237,8 +248,21 @@ void CipherPvals::encryptSData(Ciphertext**& encSData, Ciphertext**& encYSData, 
     }
     TP_EXEC_RANGE_END;
     
+    assert(!IDASH::isThreadPoolActive()&&"has active thread!");
+
+    for(long i = 0; i < sampleDim; i++) {
+       for(long k = 0; k < factorDim; k++) {
+          delete[] sxData[i][k];
+       }
+       delete[] sxData[i];
+       delete[] fullvec[i];
+       delete[] sparsevec[i];
+    }
+
     delete[] scaled_sData;
     delete[] sxData;
+    // delete[] fullvec;
+    // delete[] sparsevec;
 }
 
 
@@ -392,9 +416,9 @@ void CipherPvals::HesInverse(Ciphertext& encDet, Ciphertext*& encAdj, Ciphertext
         {-1808.451025,    106.974673,    -3124.853411,    6171.985412},
     };
     double det = 19152.84924;
-    double scalefactor = 16384;
+    double scalefactor = 32768;  // power(32,3)
     
-    encValue(encDet, det/scalefactor, nslots, L - 2);
+    encValue(encDet, det/(scalefactor*32), nslots, L - 2);
     
     long k = 0;
     for(long i = 0; i < dim; ++i){
@@ -405,212 +429,177 @@ void CipherPvals::HesInverse(Ciphertext& encDet, Ciphertext*& encAdj, Ciphertext
     }
 }
 
+//!@ Intput encData[nterms], encryption of covariant matrix
+//!@ Output: endAdj[nterms], encrpytion of adjoint matrix
+//!@         encDet, encryption of determinant
 
-/*
-//! encXData[i] = Enc(x[i][0], x[i][1], ... , x[i][k-1])
-void CipherPvals::encryptXData(Ciphertext*& encXData, Ciphertext*& enccovData, double* yData, double** xData, long factorDim, long sampleDim, long dim, long nbatching){
-    double*** temp = new double**[sampleDim];
-    double** scaled_xData = new double*[sampleDim];
+void CipherPvals::encAdjoint(Ciphertext& encDet, Ciphertext*& encAdj, Ciphertext* encData){
+    double table[20][2] = {
+        {1, 5},{1, 7},{1, 8},{1, 9},
+        {2, 4},{2, 5},{2, 6},{2, 9},
+        {3, 5},{3, 6},{3, 8},
+        {4, 7},{4, 8},{4, 9},
+        {5, 6},{5, 8},{5, 9},
+        {6, 7},{6, 8},{7, 9},
+    };
     
-    NTL_EXEC_RANGE(sampleDim, first, last);
-    for (long i = first; i < last; ++i) {
-        scaled_xData[i] = new double[dim];
-        for(long j = 0; j < factorDim; ++j){
-            scaled_xData[i][j] = xData[i][j] * (yData[i]);
-        }
-        for(long j = factorDim; j < dim; ++j){
-            scaled_xData[i][j] = 0.0;
-        }
+    //! 1. squaring and multiplication
+    Ciphertext* sqrtemp = new Ciphertext[4];
+    Ciphertext* temp = new Ciphertext[20];
+    
+    sqrtemp[0] = scheme.square(encData[3]); //! {{0,3} -> (x[0][3])^2
+    sqrtemp[1] = scheme.square(encData[5]); //! {1,2},
+    sqrtemp[2] = scheme.square(encData[6]); //! {1,3}
+    sqrtemp[3] = scheme.square(encData[8]); //! {2,3}
+    
+    TP_EXEC_RANGE(20, first, last);
+    for(long i = first; i < last; ++i){
+        long j0= table[i][0];
+        long j1= table[i][1];    
+        temp[i] = scheme.mult(encData[j0], encData[j1]);
+    }
+    TP_EXEC_RANGE_END;
+    
+    //! 2. two polynomials mult
+    Ciphertext* adj = new Ciphertext[30];
+    
+    adj[0] = scheme.sub(temp[19], sqrtemp[3]);
+    adj[1] = scheme.sub(temp[18], temp[16]);
+    adj[2] = sqrtemp[2];
+    
+    adj[3] = scheme.sub(sqrtemp[3], temp[19]);
+    adj[4] = scheme.negate(adj[1]);
+    adj[5] = scheme.sub(temp[17], temp[15]);
+    
+    adj[6] = adj[4];
+    adj[7] = scheme.sub(sqrtemp[2], temp[13]);
+    adj[8] = scheme.sub(temp[12], temp[14]);
+    
+    adj[9]  = adj[5];
+    adj[10] = adj[8];
+    adj[11] = scheme.sub(sqrtemp[1], temp[11]);
+    
+    adj[12] = scheme.negate(adj[3]);
+    adj[13] = scheme.sub(temp[10], temp[7]);
+    adj[14] = sqrtemp[0];
+    
+    adj[15] = adj[1];
+    adj[16] = scheme.sub(temp[3], temp[9]);
+    adj[17] = scheme.sub(temp[8], temp[2]);
+    
+    adj[18] = scheme.negate(adj[5]);
+    adj[19] = scheme.sub(temp[6], temp[2]);
+    adj[20] = scheme.sub(temp[1], temp[5]);
+    
+    adj[21] = scheme.negate(adj[7]);
+    adj[22] = scheme.negate(adj[16]);
+    adj[23] = sqrtemp[0];
+    
+    adj[24] = scheme.negate(adj[8]);
+    adj[25] = scheme.negate(adj[19]);
+    adj[26] = scheme.sub(temp[4], temp[0]);
+    
+    adj[27] = scheme.sub(temp[11], sqrtemp[1]);
+    adj[28] = scheme.negate(adj[20]);
+    adj[29] = temp[4];
+    
+    Ciphertext* xtemp = new Ciphertext[8];
+    for(long i = 0; i < 8; ++i){
+        xtemp[i] = encData[i];
+        //xtemp[i] = scheme.modDownTo(encData[i], adj[0].l);
+    }
+    
+    
+    double diag[4][5] = {
+        {0, 4, 5, 18, 7}, // 0th
+        {4, 0, 2, 10, 7}, // 4th
+        {7, 0, 1, 9, 4},  // 7th
+        {9, 0, 1, 5, 2},  // 9th
+    };
+    
+    double nondiag[6][3] = {
+        {1, 1, 2},
+        {2, 1, 2},
+        {3, 1, 2},
+        {5, 0, 2},
+        {6, 0, 2},
+        {8, 0, 1},
+    };
+    
+    //! diagonal computation
+    TP_EXEC_RANGE(4, first, last);
+    for(long i = first; i < last; ++i){
+        long k = 3 * diag[i][0];
+        long k0 = diag[i][0];
+        long k1 = diag[i][1];
+        long k2 = diag[i][2];
+        long k3 = diag[i][3];
+        long k4 = diag[i][4];
         
-        matrixform(temp[i], scaled_xData[i], dim);  //! dim -> dim * dim
-        encSingleData(encXData[i], temp[i], dim, nbatching);
+        encAdj[k0] = scheme.mult(xtemp[k1], adj[k]);
+        Ciphertext ctemp = scheme.add(adj[k + 1], temp[k3]);
+        scheme.multAndEqual(ctemp, xtemp[k2]);
+        scheme.addAndEqual(encAdj[k0], ctemp);
+        ctemp = scheme.mult(xtemp[k4], adj[k + 2]);
+        scheme.subAndEqual(encAdj[k0], ctemp);
+    }
+    TP_EXEC_RANGE_END;
+    
+    //! non-diagonal computation: x[k1] * adj[k] + x[k2] * adj[k + 1] + x[3] * adj[k + 2]
+    TP_EXEC_RANGE(6, first, last);
+    for(long i = first; i < last; ++i){
+        long k = 3 * nondiag[i][0];
+        long k0 = nondiag[i][0];
+        long k1 = nondiag[i][1];
+        long k2 = nondiag[i][2];
         
-        computeCov(temp[i], scaled_xData[i], dim);  //! dim -> dim * dim
-        encSingleData(enccovData[i], temp[i], dim, HEmatpar.nbatching);
+        encAdj[k0] = scheme.mult(xtemp[k1], adj[k]);
+        Ciphertext ctemp = scheme.mult(xtemp[k2], adj[k + 1]);
+        scheme.addAndEqual(encAdj[k0], ctemp);
+        ctemp = scheme.mult(xtemp[3], adj[k + 2]);
+        scheme.addAndEqual(encAdj[k0], ctemp);
     }
-    NTL_EXEC_RANGE_END;
+    TP_EXEC_RANGE_END;
     
-    delete[] temp;
-    delete[] scaled_xData;
-}
-
-//! encXData[i] = Enc(x[i][0], x[i][1], ... , x[i][k-1])
-void CipherPvals::encryptSData(Ciphertext**& encSData, Ciphertext**& encSXData,  double* yData, double** xData, double** sData,  long factorDim, long sampleDim, long dim, long nsnp, long nencsnp, long nbatching) {
-    double**** temp1 = new double***[sampleDim];
-    double**** temp2 = new double***[sampleDim];
+    // "+------------------------------------+"
+    //               Deternimant
+    // "+------------------------------------+"
     
-    double*** sxData = new double**[sampleDim];
-    double*** scaled_sData = new double**[sampleDim];
     
-    long j1 = (nencsnp - 1) * nbatching;
-    long nbatching1 = nsnp - j1; // number of slots in the final ctxt
+    Ciphertext* encDetemp = new Ciphertext[4];
+    TP_EXEC_RANGE(4, first, last);
+    for(long i = first; i < last; ++i){
+        encDetemp[i] = scheme.mult(xtemp[i], encAdj[i]);
+    }
+    TP_EXEC_RANGE_END;
+    encDet = encDetemp[0];
+    for(long i = 1; i < 4; ++i){
+        scheme.addAndEqual(encDet, encDetemp[i]);
+    }
     
-    cout << j1 << endl;
-    cout << nbatching1 << endl;
     
-    NTL_EXEC_RANGE(sampleDim, first, last);
-    for (long i = first; i < last; ++i) {
-        //! encSData
-        scaled_sData[i] = new double*[nbatching];
-        temp1[i] = new double**[nbatching];
+    //! scale by 2 * logp
+    TP_EXEC_RANGE(10, first, last);
+    for(long i = first; i < last; ++i){
+        scheme.reScaleByAndEqual(encAdj[i], 2);
+    }
+    TP_EXEC_RANGE_END;
         
-        for(long j = 0; j < nencsnp - 1; ++j){
-            long j1 = j * nbatching;
-            for(long l = 0; l < nbatching; ++l){
-                scaled_sData[i][l] = new double[dim];
-                double syData = sData[i][l + j1] * (yData[i]);  // scaled by "y"
-                for(long k = 0; k < factorDim; ++k){
-                    scaled_sData[i][l][k] = syData;
-                }
-                for(long k = factorDim; k < dim; ++k){
-                    scaled_sData[i][l][k] = 0.0;
-                }
-                matrixform(temp1[i][l], scaled_sData[i][l], dim); //! dim -> dim * dim
-            }
-            encMultipleData(encSData[i][j], temp1[i], dim, nbatching);
-        }
-
-        for(long l = 0; l < nbatching1; ++l){
-            scaled_sData[i][l] = new double[dim];
-            double syData = sData[i][l + j1] * (yData[i]);
-            for(long k = 0; k < factorDim; ++k){
-                scaled_sData[i][l][k] = syData;
-            }
-            for(long k = factorDim; k < dim; ++k){
-                scaled_sData[i][l][k] = 0.0;
-            }
-            matrixform(temp1[i][l], scaled_sData[i][l], dim); //! dim -> dim * dim
-        }
-        encMultipleData(encSData[i][nencsnp - 1], temp1[i], dim, nbatching1);
-
-        //! encSX
-        sxData[i] = new double*[nbatching];
-        temp2[i] = new double**[nbatching];
-        
-        for(long j = 0; j < nencsnp - 1; ++j){
-            long j1 = j * nbatching;
-            for(long l = 0; l < nbatching; ++l){
-                sxData[i][l] = new double[dim];
-                for(long k = 0; k < factorDim; ++k){
-                    sxData[i][l][k] = sData[i][l + j1] * xData[i][k];
-                }
-                for(long k = factorDim; k < dim; ++k){
-                    sxData[i][l][k] = 0.0;
-                }
-                matrixform(temp2[i][l], sxData[i][l], dim);
-            }
-            encMultipleData(encSXData[i][j], temp2[i], dim, nbatching);
-        }
-
-        for(long l = 0; l < nbatching1; ++l){
-            sxData[i][l] = new double[dim];
-            for(long k = 0; k < factorDim; ++k){
-                sxData[i][l][k] = sData[i][l + j1] * xData[i][k];
-            }
-            for(long k = factorDim; k < dim; ++k){
-                sxData[i][l][k] = 0.0;
-            }
-            matrixform(temp2[i][l], sxData[i][l], dim);
-        }
-        encMultipleData(encSXData[i][nencsnp - 1], temp2[i], dim, nbatching1);
-    }
-    NTL_EXEC_RANGE_END;
+    scheme.reScaleByAndEqual(encDet, 3);
     
-    delete[] temp1;
-    delete[] temp2;
-    delete[] sxData;
-    delete[] scaled_sData;
+#if  1
+    //defined(__DEBUG_)
+    for(long i = 0; i < 10; ++i){
+        double data;
+        decSingleData(data, encAdj[i]);
+        cout << i<< ":" << data << endl;
+    }
+    
+    double data;
+    decSingleData(data, encDet);
+    cout << "0.0182656 ?= " << data << endl;
+#endif
+    
+    
 }
-
-
-
-
-//! Input: encData1, encData2, encMatrix, logdim2 = log2(dim^2)
-//! Complexity: 2 HM + logdim2 Rot
-void CipherPvals::QuadForm(Ciphertext& res, Ciphertext encData1, Ciphertext encMatrix, Ciphertext encData2, long logdim2){
-    
-    //! res = encData1 * encData2 (tensoring for the corresponding plaintext vectors)
-    if(encData2.logq < encData1.logq){
-        res = encData1;
-        scheme.modDownToAndEqual(res, encData2.logq);
-        scheme.multAndEqual(res, encData2);
-    } else{
-        res = encData2;
-        scheme.modDownToAndEqual(res, encData1.logq);
-        scheme.multAndEqual(res, encData1);
-    }
-    scheme.reScaleByAndEqual(res, res.logp);
-    
-    //! res = encData1 * encMatrix * encData2
-    Ciphertext ctemp = encMatrix;
-    if(res.logq > ctemp.logq){
-        scheme.modDownToAndEqual(res, ctemp.logq);
-    } else{
-        scheme.modDownToAndEqual(ctemp, res.logq);
-    }
-    scheme.multAndEqual(res, ctemp);
-  
-    scheme.reScaleByAndEqual(res, res.logp);
-    
-    //! Allsum
-    for(long i = 0; i < logdim2; ++i){
-        long l = (1<<i);
-        Ciphertext ctemp = scheme.leftRotate(res, l*HEmatpar.nbatching);
-        scheme.addAndEqual(res, ctemp);
-    }
-}
-
-
-
-//! Input: encMatrix (symmetric matrix)
-//! complexity: (k^2+K)/2 * (SM + 2logk Rot), lvl: cBits
-void CipherPvals::replicate(Ciphertext**& res, Ciphertext encMatrix, long dim, long logdim2, long nbatching){
-    res = new Ciphertext*[dim];
-    ZZX** poly = new ZZX*[dim];
-    
-    NTL_EXEC_RANGE(dim, first, last);
-    for(int i = first; i< last; ++i){
-        res[i] = new Ciphertext[dim];
-        poly[i] = new ZZX[dim];
-        for(long j = i; j < dim; ++j){
-            long start = (dim * i + j) * nbatching;
-            long end = start + nbatching;
-            complex<double>* pvals = new complex<double>[HEmatpar.nslots];
-            for(long l = start; l < end; ++l){
-                pvals[l].real(1.0);
-            }
-            poly[i][j] = scheme.context.encode(pvals, HEmatpar.nslots, HEmatpar.cBits);
-            delete[] pvals;
-            res[i][j] = scheme.multByPoly(encMatrix, poly[i][j], HEmatpar.cBits);
-            scheme.reScaleByAndEqual(res[i][j], HEmatpar.cBits);
-            
-            for(long k = 0; k < logdim2; ++k){
-                long l = (1 << k);
-                Ciphertext ctemp = scheme.rightRotate(res[i][j], l * nbatching);
-                scheme.addAndEqual(res[i][j], ctemp);
-            }
-        }
-    }
-    NTL_EXEC_RANGE_END;
-}
- 
- //! Input: data of size (dim * dim)
- //! Return Enc(x) = (- x[0][0] -|  - x[0][1] - | ... | - x[d-1][d-1] -)
- //!  each of values is replicated with nbatching times
- 
- void CipherPvals::encSingleData(Ciphertext& encData, double** data, long dim, long PoTdim, long nbatching, long nslots, long L){
- complex<double>* cmsg = new complex<double>[nslots];
- NTL_EXEC_RANGE(nbatching, first, last);
- for(int l = first; l < last; ++l){
- for(long i = 0; i < dim; ++i){
- for(long j = 0; j < dim; ++j){
- cmsg[(i*PoTdim + j)* nbatching + l].real(data[i][j]);
- }
- }
- }
- NTL_EXEC_RANGE_END;
- encData = scheme.encrypt(cmsg, nslots, L);
- delete[] cmsg;
- }
-*/
 

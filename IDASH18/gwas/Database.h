@@ -34,9 +34,6 @@ void ListsData(double**& sData, long& nsnp, long& sampleDim, vector<vector<strin
 
 void normalizeData(double**& Data, double** zData, long factorDim, long sampleDim);
 
-//void printRvector(vec_RR& vec, const long k = 0);
-
-//void printRmatrix(Mat<RR>& mat, const long k = 0);
 
 void printvector(double* vec, const long k = 0);
 

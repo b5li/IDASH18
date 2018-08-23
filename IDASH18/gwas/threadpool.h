@@ -6,6 +6,10 @@
 #include <mutex>
 #include <vector>
 #include <future>
+#include <sched.h>
+#include <pthread.h>
+#include <sys/sysinfo.h>
+#include <iostream>
 #include <assert.h>
 
 #define DEFAULT_NUM_THREADS 4
@@ -202,9 +206,34 @@ public:
 
    explicit ThreadPool(size_t n)
       : active_threads_(0) {
-      for(size_t i = 1; i < n; i++) { // create n-1 threads
-         WorkerThread * t = new WorkerThread();
-         thread_.push_back(t);
+      int const current_cpu = sched_getcpu();
+      if(current_cpu < 0) {
+         assert(0&&"Error calling sched_getcpu()");
+      }
+
+      int const number_cpu  = get_nprocs();
+      int next_cpu = 0;
+
+      for(size_t i = 1; i < n; i++, next_cpu++) { // create n-1 threads
+         WorkerThread * wt = new WorkerThread();
+
+         if(next_cpu >= number_cpu) {
+            next_cpu = 0;
+         }
+         if(next_cpu == current_cpu) {
+            next_cpu = (next_cpu+1) % number_cpu;
+         }
+
+         cpu_set_t cpuset;
+         CPU_ZERO(&cpuset);
+         CPU_SET(next_cpu, &cpuset);
+         int rc = pthread_setaffinity_np(wt->t.native_handle(),
+                                         sizeof(cpu_set_t), &cpuset);
+         if(rc != 0) {
+            assert(0&&"Error calling pthread_setaffinity_np");
+         }
+         std::cerr << "assign thread " << i << " to cpu " << next_cpu << std::endl;
+         thread_.push_back(wt);
       }
    }
          
@@ -269,7 +298,6 @@ inline ThreadPool *getThreadPool() {
 
 void initThreadPool(size_t n);
 
-
 inline long availableThreads() {
    ThreadPool *pool = getThreadPool();
    if(!pool || pool->active()) {
@@ -277,6 +305,14 @@ inline long availableThreads() {
    } else {
       return pool->numThreads();
    }
+}
+
+inline bool isThreadPoolActive() {
+   ThreadPool *pool = getThreadPool();
+   if(!pool) {
+      return false;
+   }
+   return pool->active();
 }
 
 }

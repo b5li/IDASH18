@@ -24,6 +24,125 @@
 
 using namespace std;
 
+void calculateAdjoint(double*& res, double& det, double* x, long scalefactor){
+    // x[0] x[1] x[2] x[3]
+    //      x[4] x[5] x[6]
+    //           x[7] x[8]
+    //                x[10]
+    
+    res = new double[10];
+    
+    double sqrtable[4] = {3,5,6,8};   // {{0,3},{1,2},{1,3},{2,3},
+    double table[20][2] = {
+        {1, 5},{1, 7},{1, 8},{1, 9},
+        {2, 4},{2, 5},{2, 6},{2, 9},
+        {3, 5},{3, 6},{3, 8},
+        {4, 7},{4, 8},{4, 9},
+        {5, 6},{5, 8},{5, 9},
+        {6, 7},{6, 8},{7, 9},
+    };
+/*
+    double table1[20][2][2] = {
+        {{0,1}, {1,2}},  {{0,1}, {2,2}}, {{0,1}, {2,3}},  {{0,1}, {3,3}},
+        {{0,2}, {1,1}},  {{0,2}, {1,2}}, {{0,2}, {1,3}},  {{0,2}, {3,3}},
+        {{0,3}, {1,2}},  {{0,3}, {1,3}}, {{0,3}, {2,3}},
+        {{1,1}, {2,2}},  {{1,1}, {2,3}}, {{1,1}, {3,3}},
+        {{1,2}, {1,3}},  {{1,2}, {2,3}}, {{1,2}, {3,3}},
+        {{1,3}, {2,2}},  {{1,3}, {2,3}}, {{2,2}, {3,3}},
+    };
+*/
+    
+    double* sqrtemp = new double[4];
+    double* temp = new double[20];  //! precomputed value
+    
+    for(long i = 0; i < 4; ++i){
+        long j0= sqrtable[i];
+        sqrtemp[i] = pow(x[j0], 2);
+    }
+    for(long i = 0; i < 20; ++i){
+        long j0= table[i][0];
+        long j1= table[i][1];
+        temp[i] = x[j0] * x[j1];
+    }
+    
+    
+    double* adj = new double[30];
+    
+    //! 0
+    adj[0] = temp[19] - sqrtemp[3];
+    adj[1] = temp[18] - temp[16];
+    adj[2] = sqrtemp[2];
+    
+    //! 1
+    adj[3] = sqrtemp[3]- temp[19];
+    adj[4] = - adj[1];
+    adj[5] = temp[17] - temp[15];
+    
+    //! 2
+    adj[6] = adj[4];
+    adj[7] = sqrtemp[2] - temp[13];
+    adj[8] = temp[12] - temp[14];
+    
+    //! 3
+    adj[9]  = adj[5];
+    adj[10] = adj[8];
+    adj[11] = sqrtemp[1] - temp[11];
+    
+    //! 4
+    adj[12] = - adj[3];
+    adj[13] = temp[10] - temp[7];
+    adj[14] = sqrtemp[0];
+    
+    //! 5
+    adj[15] = adj[1];
+    adj[16] = temp[3] - temp[9];
+    adj[17] = temp[8] - temp[2];
+    
+    //! 6
+    adj[18] = -adj[5];
+    adj[19] = temp[6] - temp[2];
+    adj[20] = temp[1] - temp[5];
+
+    //! 7
+    adj[21] = - adj[7];
+    adj[22] = - adj[16];
+    adj[23] = sqrtemp[0];
+    
+    //! 8
+    adj[24] = - adj[8];
+    adj[25] = - adj[19];
+    adj[26] = temp[4] - temp[0];
+    
+    //! 9
+    adj[27] = temp[11] - sqrtemp[1];
+    adj[28] = -adj[20];
+    adj[29] = temp[4];
+    
+    
+    res[0] = x[4] * adj[0] +  x[5] * (adj[1] + temp[18]) - x[7] * adj[2];
+    res[4] = x[0] * adj[12] + x[2] * (adj[13] + temp[10]) - x[7] * adj[14];
+    res[7] = x[0] * adj[21] + x[1] * (adj[22] + temp[9]) - x[4] * adj[23];
+    res[9] = x[0] * adj[27] + x[1] * (adj[28] + temp[5]) - x[2] * adj[29];
+    
+    res[1] = x[1] * adj[3] + x[2] * adj[4] + x[3] * adj[5];
+    res[2] = x[1] * adj[6] + x[2] * adj[7] + x[3] * adj[8];
+    res[3] = x[1] * adj[9] + x[2] * adj[10] + x[3] * adj[11];
+    res[5] = x[0] * adj[15] + x[2] * adj[16] + x[3] * adj[17];
+    res[6] = x[0] * adj[18] + x[2] * adj[19] + x[3] * adj[20];
+    res[8] = x[0] * adj[24] + x[1] * adj[25] + x[3] * adj[26];
+    
+    
+    
+    det = (x[0] * res[0] + x[1] * res[1] + x[2] * res[2] + x[3] * res[3]) * scalefactor;
+    
+    cout << res[0] << "," << res[1]  << "," << res[2] << "," << res[3] << endl;
+    cout << res[4] << "," << res[5]  << "," << res[6] << endl;
+    cout << res[7] << "," << res[8] << endl;
+    cout << res[9] << endl;
+    
+    cout << "det: " << det << endl;
+}
+
 //!@ Input: vec_RR
 //!@ Function: print the vector
 //!  If k = 0, then print out all the components of an input vector

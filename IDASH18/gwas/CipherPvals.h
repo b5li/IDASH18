@@ -49,18 +49,13 @@ public:
     
     void decVector(double*& Data, Ciphertext encData, long len);
     
-    
-    void computeCov(double**& covariance, double* data, long dim);
-    
-   
-    //void encMultipleData(Ciphertext& encData, double*** data, long dim, long nbatching, long nslots, long L);
-    
-    
-    
-    void encryptXData(Ciphertext**& encYXData, Ciphertext**& enccovData, double* yData, double** xData, long factorDim, long sampleDim, long dim, long nslots, long L) ;
+    void computeCov(double*& covariance, double* data, long dim, long nterms, long scalefactor);
+
+    void encryptXData(Ciphertext**& encYXData, Ciphertext**& enccovData, double* yData, double** xData, long factorDim, long sampleDim, long dim, long nterms, long scalefactor, long nslots, long L) ;
     
     void encryptSData(Ciphertext**& encSData, Ciphertext**& encYSData, Ciphertext***& encSXData,  double* yData, double** xData, double** sData,  long factorDim, long sampleDim, long nsnp, long nencsnp, long nslots, long L) ;
-
+    
+    //! just encrypt (for testging)
     void HesInverse(Ciphertext& encDet, Ciphertext*& encAdj, Ciphertext** enccovData, long dim, long nslots, long L);
     
     void QuadForm(Ciphertext& res, Ciphertext* encData1, Ciphertext* encMatrix, Ciphertext* encData2, long factorDim);
@@ -68,7 +63,8 @@ public:
     void SqrQuadForm(Ciphertext& res, Ciphertext* encData, Ciphertext* encMatrix, long factorDim);
     
     
-    
+    //-------------------------
+    void encAdjoint(Ciphertext& encDet, Ciphertext*& encAdj, Ciphertext* encData);
     
 };
 

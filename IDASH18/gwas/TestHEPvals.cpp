@@ -18,6 +18,12 @@
 
 #include "threadpool.h"
 
+#include "NTL/ZZX.h"
+#include <NTL/RR.h>
+#include "NTL/vec_RR.h"
+#include "NTL/mat_RR.h"
+#include <NTL/BasicThreadPool.h>
+
 #include "../src/Ciphertext.h"
 #include "../src/Context.h"
 #include "../src/Scheme.h"
@@ -32,6 +38,8 @@
 #include "CipherPvals.h"
 #include "TestHEPvals.h"
 
+#include "sys.h" 
+
 void TestHEPvals::testHELinReg(double*& zScore, double*& pVals, double* yData, double** xData, double** sData, long factorDim, long sampleDim, long nsnp,  string filename){
     
     //! Parameters for approx-HE
@@ -45,7 +53,7 @@ void TestHEPvals::testHELinReg(double*& zScore, double*& pVals, double* yData, d
     long factorDim2 = factorDim * factorDim;
     long dim = (1 << (long)ceil(log2(factorDim))); //! closet PoT
     long dim2 = dim * dim;
-    
+    long scalefactor = 32.0;  //! scale factor for covariance
     long nencsnp = (long)ceil((double)nsnp/nslots);  // number of snp encryptions
     long nterms = dim * (dim + 1)/2;    
     
@@ -100,9 +108,33 @@ void TestHEPvals::testHELinReg(double*& zScore, double*& pVals, double* yData, d
             encSXData[i][k] = new Ciphertext[nencsnp];
         }
     }
+
+
+    std::cout << "allocate ciphertext" << std::endl;
+
+    {
+       MemoryUsage mem = getMemoryUsage();
+       cout << "Peak memory = " << mem.vmpeak/1024 << "KB" << std::endl;
+       cout << "Curr memory = " << mem.vmrss/1024  << "KB" << std::endl;
+    }
+
+    cipherPvals.encryptXData(encYXData, enccovData, yData, xData, factorDim, sampleDim, dim, nterms, scalefactor, nslots, L);
+    std::cout << "encrypt X" << std::endl;
+
+    {
+       MemoryUsage mem = getMemoryUsage();
+       cout << "Peak memory = " << mem.vmpeak/1024 << "KB" << std::endl;
+       cout << "Curr memory = " << mem.vmrss/1024  << "KB" << std::endl;
+    }
     
-    cipherPvals.encryptXData(encYXData, enccovData, yData, xData, factorDim, sampleDim, dim, nslots, L);
-    cipherPvals.encryptSData(encSData, encYSData, encSXData, yData, xData, sData, factorDim, sampleDim, nsnp, nencsnp,nslots, L);
+    cipherPvals.encryptSData(encSData, encYSData, encSXData, yData, xData, sData, factorDim, sampleDim, nsnp, nencsnp,  nslots, L);
+    std::cout << "encrypt S" << std::endl;
+
+    {
+       MemoryUsage mem = getMemoryUsage();
+       cout << "Peak memory = " << mem.vmpeak/1024 << "KB" << std::endl;
+       cout << "Curr memory = " << mem.vmrss/1024  << "KB" << std::endl;
+    }
     
     end = std::chrono::steady_clock::now();
     diff = end - start;
@@ -116,32 +148,63 @@ void TestHEPvals::testHELinReg(double*& zScore, double*& pVals, double* yData, d
 
     double totalEvaltime;
     
+    // "+------------------------------------+"
     //! 1. Aggregation
+    // "+------------------------------------+"
     //! encYS[j] = Y^T * S = sum_i encYSData[i][j]
     //! encS[j]  = sum_i SData[i][j]^2
     
     start= chrono::steady_clock::now();
     
+    Ciphertext* encCov = new Ciphertext[nterms];
     Ciphertext* encYS = new Ciphertext[nencsnp];
     Ciphertext* encS = new Ciphertext[nencsnp];
     
-    TP_EXEC_RANGE(nencsnp, first, last);
-    for(long j = first; j < last; ++j){
-       encYS[j] = encYSData[0][j];
-       encS[j] = encSData[0][j];
-       for(long i = 1; i < sampleDim; ++i){
-          scheme.addAndEqual(encYS[j], encYSData[i][j]);
-          scheme.addAndEqual(encS[j], encSData[i][j]);
-       }
+ 
+    //! 10s
+    TP_EXEC_RANGE(nterms, first, last);
+    for(long k = first; k < last; ++k){
+        encCov[k] = enccovData[0][k];
+        for(long i = 1; i < sampleDim; ++i){
+            scheme.addAndEqual(encCov[k], enccovData[i][k]);
+        }
     }
     TP_EXEC_RANGE_END;
+
+    for(long i = 0; i < sampleDim; ++i){
+       delete [] enccovData[i];
+       // for(long k = 0; k < factorDim; ++k){
+       //    encSXData[i][k] = new Ciphertext[nencsnp];
+       // }
+    }
+    delete [] enccovData;
+
+    TP_EXEC_RANGE(nencsnp, first, last);
+    for(long j = first; j < last; ++j){
+        encYS[j] = encYSData[0][j];
+        encS[j] = encSData[0][j];
+        for(long i = 1; i < sampleDim; ++i){
+            scheme.addAndEqual(encYS[j], encYSData[i][j]);
+            scheme.addAndEqual(encS[j], encSData[i][j]);
+        }
+    }
+    TP_EXEC_RANGE_END;
+
+    for(long i = 0; i < sampleDim; ++i){
+       delete [] encSData[i];
+       // for(long k = 0; k < factorDim; ++k){
+       //    encSXData[i][k] = new Ciphertext[nencsnp];
+       // }
+    }
+    delete [] encSData;
+
     
     //! encYX[k] = YXvec = y^T * X[k] = [-29, -6.506140997, -6.368385672, -12.88024343]
     //! encSX[factorDim][nencsnp]
     
     Ciphertext* encYX = new Ciphertext[factorDim];
     Ciphertext** encSX = new Ciphertext*[factorDim];
-    
+ 
     TP_EXEC_RANGE(factorDim, first, last);
     for(long k = first; k < last; ++k){
         encYX[k] = encYXData[0][k];
@@ -157,8 +220,25 @@ void TestHEPvals::testHELinReg(double*& zScore, double*& pVals, double* yData, d
         }
     }
     TP_EXEC_RANGE_END;
-    
+
+    for(long i = 0; i < sampleDim; ++i){
+       delete [] encYXData[i];
+       delete [] encYSData[i];
+       for(long k = 0; k < factorDim; ++k){
+          delete [] encSXData[i][k];
+       }
+       delete [] encSXData[i];
+    }
+    delete [] encYXData;
+    delete [] encYSData;
+ 
 #if  defined(__DEBUG_)
+    for(long k = 0; k < nterms; ++k){
+        double res;
+        cipherPvals.decSingleData(res, encCov[k]);
+        cout << res << endl;
+    }
+
     for(long k = 0; k < 4; ++k){
         double res;
         cipherPvals.decSingleData(res, encYX[k]);
@@ -172,12 +252,15 @@ void TestHEPvals::testHELinReg(double*& zScore, double*& pVals, double* yData, d
     cout << "1. Aggregation = " << timeElapsed << " s" << endl;
     totalEvaltime = timeElapsed;
     
-
+    // "+------------------------------------+"
     //! 2. Hessian
-    start= chrono::steady_clock::now();
+    // "+------------------------------------+"
+    
+    start = chrono::steady_clock::now();
     Ciphertext encDet;
     Ciphertext* encAdj = new Ciphertext[nterms];
-    cipherPvals.HesInverse(encDet, encAdj, enccovData, dim, nslots, L);
+    //cipherPvals.HesInverse(encDet, encAdj, enccovData, dim, nslots, L);
+    cipherPvals.encAdjoint(encDet, encAdj, encCov);
     
     end = std::chrono::steady_clock::now();
     diff = end - start;
@@ -185,8 +268,10 @@ void TestHEPvals::testHELinReg(double*& zScore, double*& pVals, double* yData, d
     cout << "2. (X^T * X)^-1 = " << timeElapsed << " s" << endl;
     totalEvaltime += timeElapsed;
     
-
+#if 1
+    // "+------------------------------------+"
     //! 3. Norm
+    // "+------------------------------------+"
     //! encwtYX = (y^T * X) * adj(X^T * X) * (X^T * y)
     //! Ynorm = |A| <Y,Y> - wtYX = |A| * sampleDim - wtYX
     
@@ -194,12 +279,24 @@ void TestHEPvals::testHELinReg(double*& zScore, double*& pVals, double* yData, d
     start= chrono::steady_clock::now();
     
     Ciphertext encWtYX;
-    cipherPvals.SqrQuadForm(encWtYX, encYX, encAdj, factorDim);  // 12.7 * 19152/ scalefactor
+    cipherPvals.SqrQuadForm(encWtYX, encYX, encAdj, factorDim);  // L - 3, 12.7
     
-    Ciphertext encYnorm = scheme.multByConst(encDet,  (double) sampleDim);
+    Ciphertext encYnorm = scheme.multByConst(encDet, (double) sampleDim * scalefactor);  // L - 4, (0.58 * n * 32)
     scheme.reScaleByAndEqual(encYnorm, 1);
-    scheme.subAndEqual(encYnorm, encWtYX);
     
+    scheme.modDownToAndEqual(encWtYX, encYnorm.l);
+    scheme.subAndEqual(encYnorm, encWtYX); // L - 4
+    
+#if defined(__DEBUG_)
+    double res;
+    cipherPvals.decSingleData(res, encDet);
+    cout << res << endl;
+    
+    cipherPvals.decSingleData(res, encYnorm);
+    cout << res << endl;
+#endif
+    
+#if 1
     //! YSnorm = <ystar, sstar> = encYS - encWtYS
     Ciphertext* encWtYS = new Ciphertext[nencsnp];
     Ciphertext* encYSnorm = new Ciphertext[nencsnp];
@@ -212,18 +309,32 @@ void TestHEPvals::testHELinReg(double*& zScore, double*& pVals, double* yData, d
         for(long k = 0; k < factorDim; ++k){
             encSX1[k] = encSX[k][j];
         }
-
-        cipherPvals.QuadForm(encWtYS[j], encYX, encAdj, encSX1, factorDim);
-        encYSnorm[j] = scheme.modDownTo(encYS[j], encDet.l);
+        
+        //! encYSnorm = encDet * (encYS[j] * scalefactor) - encWtYS
+        encYSnorm[j] = scheme.multByConst(encYS[j], (double) scalefactor);
+        scheme.reScaleByAndEqual(encYSnorm[j], 1);              //! L - 1
+        
+        scheme.modDownToAndEqual(encYSnorm[j], encDet.l);       //! L - 3
         scheme.multAndEqual(encYSnorm[j], encDet);
-        scheme.reScaleByAndEqual(encYSnorm[j], 1);
+        scheme.reScaleByAndEqual(encYSnorm[j], 1);              //! L - 4
+        
+        cipherPvals.QuadForm(encWtYS[j], encYX, encAdj, encSX1, factorDim); //! L - 3
+        scheme.modDownToAndEqual(encWtYS[j], encYSnorm[j].l);   //! L - 4
         scheme.subAndEqual(encYSnorm[j], encWtYS[j]);
-      
-        cipherPvals.SqrQuadForm(encWtSS[j], encSX1, encAdj, factorDim); // L - 3
-        encSnorm[j] = scheme.modDownTo(encS[j], encDet.l);
-        scheme.multAndEqual(encSnorm[j], encDet); // L - 3
-        scheme.reScaleByAndEqual(encSnorm[j], 1);
+    
+        //! encSnorm
+        encSnorm[j] = scheme.multByConst(encS[j], (double) scalefactor);
+        scheme.reScaleByAndEqual(encSnorm[j], 1);               //! L - 1
+        
+        scheme.modDownToAndEqual(encSnorm[j], encDet.l);        //! L - 2
+        scheme.multAndEqual(encSnorm[j], encDet);
+        scheme.reScaleByAndEqual(encSnorm[j], 1);               //! L - 3
+        
+        cipherPvals.SqrQuadForm(encWtSS[j], encSX1, encAdj, factorDim); //! L - 3
+        scheme.modDownToAndEqual(encWtSS[j], encSnorm[j].l);    //! L - 4
         scheme.subAndEqual(encSnorm[j], encWtSS[j]);
+
+        delete [] encSX1;
     }
     TP_EXEC_RANGE_END;
     
@@ -234,8 +345,18 @@ void TestHEPvals::testHELinReg(double*& zScore, double*& pVals, double* yData, d
     cout << "logq: " << encYSnorm[0].l  << "," << encSnorm[0].l << endl;   // L - 3
     totalEvaltime += timeElapsed;
     cout << "Total Evaluation Timing = " << totalEvaltime << " s" << endl;
+
+    delete [] encWtYS;
+    delete [] encWtSS;
+    delete [] encAdj;
+    for(long i = 0; i < factorDim; i++) {
+       delete [] encSX[i];
+    }
+    delete [] encSX;
+
+    delete [] encYX;
  
- 
+
     cout << "+------------------------------------+" << endl;
     cout << "|             Decryption             |" << endl;
     cout << "+------------------------------------+" << endl;
@@ -287,4 +408,9 @@ void TestHEPvals::testHELinReg(double*& zScore, double*& pVals, double* yData, d
     
     //printvectorToFile(zScore, filename, nsnp);
     printvectorToFile(pVals, filename, nsnp);
+
+    delete [] encYSnorm;
+    delete [] encSnorm;
+#endif
+#endif
 }
