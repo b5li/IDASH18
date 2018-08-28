@@ -143,6 +143,8 @@ void calculateAdjoint(double*& res, double& det, double* x, long scalefactor){
     cout << "det: " << det << endl;
 }
 
+ 
+
 //!@ Input: vec_RR
 //!@ Function: print the vector
 //!  If k = 0, then print out all the components of an input vector
@@ -324,5 +326,3 @@ void pvalsError(double& TP, double& FP, double& FN, double& TN, double* pvals1, 
 double pnorm(double x){
     return erfc(x / sqrt(2));
 }
-
-

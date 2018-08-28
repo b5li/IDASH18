@@ -8,8 +8,16 @@
 
 #include "SecretKey.h"
 
-SecretKey::SecretKey(Context& context) {
+SecretKey::SecretKey(Context& context, long keydist) {
 	sx = new uint64_t[context.N * (context.L + context.K)]();
-	context.sampleHWT(sx, context.L, context.K);
+    
+    //! default: HWT
+    if(keydist == 0){
+        context.sampleHWT(sx, context.L, context.K);
+    }
+    else{
+        context.sampleZO(sx, context.Nh, context.L, context.K);
+    }
+    
 	context.NTTAndEqual(sx, context.L, context.K);
 }

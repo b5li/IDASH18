@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <string>
 
+#define USE_NTL 1
 #ifdef USE_NTL
 #include <NTL/BasicThreadPool.h>
 #endif
@@ -13,7 +14,7 @@
 #include "TestPvals.h"
 #include "TestHEPvals.h"
 
-#include "sys.h"
+//#include "sys.h"
 
 using namespace std;
 using namespace NTL;
@@ -26,11 +27,11 @@ using namespace NTL;
 // TP_EXEC_RANGE(nterms, first, last);
 
 int main(int argc, char **argv) {
-   int numThreads; sscanf(argv[3],"%d",&numThreads);
+	
 #ifdef USE_NTL
     SetNumThreads(8);
 #else
-    IDASH::initThreadPool(numThreads);
+    IDASH::initThreadPool(8);
 #endif
 	string covariate_filename(argv[1]);     // path to covariate file
     string snp_filename(argv[2]);           // path to snp file
@@ -79,16 +80,15 @@ int main(int argc, char **argv) {
     double* zScore_ct;
     double* pVals_ct;
  
-    TestHEPvals::testHELinReg(zScore_ct, pVals_ct, yData, xData, sData, factorDim, sampleDim, nsnp,  "Result/HEpvals.txt");
-
- 
+    //TestHEPvals::testHELinReg(zScore_ct, pVals_ct, yData, xData, sData, factorDim, sampleDim, nsnp,  "Result/HEpvals.txt");
+    TestHEPvals::testHESIMDLinReg(zScore_ct, pVals_ct, yData, xData, sData, factorDim, sampleDim, nsnp,  "Result/HEpvals.txt");
+    
  
     cout << "+------------------------------------+" << endl;
     cout << "|            Quality Check           |" << endl;
     cout << "+------------------------------------+" << endl;
     
     // origianl semi-parallel logistic regression (plaintext)
-    
     double* zScore_pt;
     double* pVals_pt;
     
@@ -100,14 +100,14 @@ int main(int argc, char **argv) {
     cout << "Error (TP, FP, FN, TN) of pt/ct : " ;
     cout << TP << "," <<  FP << ","  << FN << "," << TN << endl;
  
-    MemoryUsage mem = getMemoryUsage();
     
     cout << "+------------------------------------+" << endl;
-    cout << "|            Memory Usage            |" << endl;
+    cout << "|            Quality Check           |" << endl;
     cout << "+------------------------------------+" << endl;
+    //MemoryUsage mem = getMemoryUsage();
     
-    cout << "Peak memory = " << mem.vmpeak/1024 << "KB" << std::endl;
-    cout << "Curr memory = " << mem.vmrss/1024  << "KB" << std::endl;
-    
+    //cout << "Peak memory = " << mem.vmpeak/1024 << "KB" << std::endl;
+    //cout << "Curr memory = " << mem.vmrss/1024  << "KB" << std::endl;
+
 	return 0;
 }

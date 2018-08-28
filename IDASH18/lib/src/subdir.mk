@@ -6,6 +6,9 @@
 CPP_SRCS += \
 ../src/Ciphertext.cpp \
 ../src/Context.cpp \
+../src/ExtCiphertext.cpp \
+../src/ExtScheme.cpp \
+../src/ExtTestScheme.cpp \
 ../src/EvaluatorUtils.cpp \
 ../src/Key.cpp \
 ../src/Numb.cpp \
@@ -15,11 +18,14 @@ CPP_SRCS += \
 ../src/SecretKey.cpp \
 ../src/StringUtils.cpp \
 ../src/TestScheme.cpp \
-../src/TimeUtils.cpp 
+../src/TimeUtils.cpp \
 
 OBJS += \
 ./src/Ciphertext.o \
 ./src/Context.o \
+./src/ExtCiphertext.o \
+./src/ExtScheme.o \
+./src/ExtTestScheme.o \
 ./src/EvaluatorUtils.o \
 ./src/Key.o \
 ./src/Numb.o \
@@ -34,6 +40,9 @@ OBJS += \
 CPP_DEPS += \
 ./src/Ciphertext.d \
 ./src/Context.d \
+./src/ExtCiphertext.d \
+./src/ExtScheme.d \
+./src/ExtTestScheme.d \
 ./src/EvaluatorUtils.d \
 ./src/Key.d \
 ./src/Numb.d \

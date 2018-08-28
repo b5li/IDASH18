@@ -34,6 +34,8 @@ class TestHEPvals
 public:
    
     static void testHELinReg(double*& zScore, double*& pVals, double* yData, double** xData, double** sData, long factorDim, long sampleDim, long nsnp,  string filename);
+    
+    static void testHESIMDLinReg(double*& zScore, double*& pVals, double* yData, double** xData, double** sData, long factorDim, long sampleDim, long nsnp,  string filename);
 
 };
 

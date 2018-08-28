@@ -17,7 +17,7 @@ public:
 
 	uint64_t* sx;
 
-	SecretKey(Context& context);
+	SecretKey(Context& context, long keydist = 0);
 
 };
 
