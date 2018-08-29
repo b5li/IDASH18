@@ -16,8 +16,8 @@ mv ntl-11.3.0 ntl
 
 ```
 docker build --rm -t idash18 .
-
 docker tag idash18 baiyuli/idash18
+docker push baiyuli/idash18
 ```
 
 # To run the docker image:
