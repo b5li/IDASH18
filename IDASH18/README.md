@@ -4,5 +4,4 @@
 
 # install libHEGWAS.a
 1. $make new in the run directory
-2. $make test
-3. $./foo "idashdata/covariates.txt" "idashdata/snpMat.txt"
+2. $make testlinreg
