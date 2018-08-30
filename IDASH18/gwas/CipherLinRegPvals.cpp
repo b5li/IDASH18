@@ -128,14 +128,14 @@ void CipherPvals::encryptSData(Ciphertext**& encSData, Ciphertext**& encYSData, 
                 fullvec[i][l] = sData[i][j1] ;
                 j1++;
             }
-            encFullyPackedVec(encSData[i][j], fullvec[i], nslots, L);
+            encFullyPackedVec(encSData[i][j], fullvec[i], nslots, L - 2);
         }
         //! not full slot
         for(long l = 0; l < nslots1; ++l){
             sparsevec[i][l] = sData[i][j1] ;
             j1++;
         }
-        encSparselyPackedVec(encSData[i][nencsnp-1], sparsevec[i], nslots1, nslots, L);
+        encSparselyPackedVec(encSData[i][nencsnp-1], sparsevec[i], nslots1, nslots, L - 2);
         
         //! 1. encryption of YSData = Y * S
         j1 = 0;
@@ -146,14 +146,14 @@ void CipherPvals::encryptSData(Ciphertext**& encSData, Ciphertext**& encYSData, 
                     fullvec[i][l] = sData[i][j1] ;
                     j1++;
                 }
-                encFullyPackedVec(encYSData[i][j], fullvec[i], nslots, L);
+                encFullyPackedVec(encYSData[i][j], fullvec[i], nslots, L - 2);
             }
             //! not full slot
             for(long l = 0; l < nslots1; ++l){
                 sparsevec[i][l] = sData[i][j1] ;
                 j1++;
             }
-            encSparselyPackedVec(encYSData[i][nencsnp-1], sparsevec[i], nslots1, nslots, L);
+            encSparselyPackedVec(encYSData[i][nencsnp-1], sparsevec[i], nslots1, nslots, L - 2);
         }
         else{
             for(long j = 0; j < nencsnp - 1; ++j){
@@ -161,14 +161,14 @@ void CipherPvals::encryptSData(Ciphertext**& encSData, Ciphertext**& encYSData, 
                     fullvec[i][l] = - sData[i][j1];
                     j1++;
                 }
-                encFullyPackedVec(encYSData[i][j], fullvec[i], nslots, L);
+                encFullyPackedVec(encYSData[i][j], fullvec[i], nslots, L - 2);
             }
             //! not full slot
             for(long l = 0; l < nslots1; ++l){
                 sparsevec[i][l] = - sData[i][j1];
                 j1++;
             }
-            encSparselyPackedVec(encYSData[i][nencsnp-1], sparsevec[i], nslots1, nslots, L);
+            encSparselyPackedVec(encYSData[i][nencsnp-1], sparsevec[i], nslots1, nslots, L - 2);
         }
         
         //! 2. encryption of sxData
@@ -210,7 +210,11 @@ void CipherPvals::encryptSIMDXData(Ciphertext& encYXData, Ciphertext*& enccovDat
     long nslots1 = factorDim * nXbatching;  // total number of slots of a xData[i] = 16
     double* temp = new double[nslots];
     
-    //! encryption of YXData
+    // "+------------------------------------+"
+    //!  encryption of YXData
+    // "+------------------------------------+"
+    
+    //! encoding of YXData
     NTL_EXEC_RANGE(sampleDim, first, last);
     for (long i = first; i < last; ++i) {
         long start = nslots1 * i;
@@ -237,6 +241,8 @@ void CipherPvals::encryptSIMDXData(Ciphertext& encYXData, Ciphertext*& enccovDat
     for(long i = nslots2; i < nslots; ++i){
         temp[i] = 0.0;
     }
+    
+    //! encryption
     encFullyPackedVec(encYXData, temp, nslots, L);
     
     // "+------------------------------------+"

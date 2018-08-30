@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
     double* zScore_ct;
     double* pVals_ct;
  
-    TestHEPvals::testHESIMDLinReg_DecompKS(zScore_ct, pVals_ct, yData, xData, sData, factorDim, sampleDim, nsnp,  "Result/HELinRegpvals_Decomp.txt");
+    TestHEPvals::testFastHELinReg(zScore_ct, pVals_ct, yData, xData, sData, factorDim, sampleDim, nsnp, "LinRegResult/FastHELinReg_pvals.txt");
     //TestHEPvals::testHESIMDLinReg(zScore_ct, pVals_ct, yData, xData, sData, factorDim, sampleDim, nsnp,  "Result/HELinRegpvals_MR.txt");
     
     //TestHEPvals::testHELinReg(zScore_ct, pVals_ct, yData, xData, sData, factorDim, sampleDim, nsnp,  "Result/HEpvals.txt");
@@ -87,10 +87,10 @@ int main(int argc, char **argv) {
     cout << "|            Quality Check           |" << endl;
     cout << "+------------------------------------+" << endl;
     
-    // origianl semi-parallel logistic regression (plaintext)
+    //! origianl semi-parallel logistic regression (plaintext)
     double* zScore_pt;
     double* pVals_pt;
-    SimpleDataFromFile(pVals_pt, "Result/pvals_parallel_logreg.txt");
+    SimpleDataFromFile(pVals_pt, "LinRegResult/pvals_parallel_logreg.txt");
     
     double TP, FP, FN, TN;
     pvalsError(TP, FP, FN, TN, pVals_ct, pVals_pt, nsnp, siglevel);
