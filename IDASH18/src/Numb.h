@@ -53,7 +53,7 @@ uint64_t gcd(uint64_t a, uint64_t b);
 
 long gcd(long a, long b);
 
-void findPrimeFactors(set<uint64_t> &s, uint64_t number);
+void findPrimeFactors(std::set<uint64_t> &s, uint64_t number);
 
 uint64_t findPrimitiveRoot(uint64_t m);
 
