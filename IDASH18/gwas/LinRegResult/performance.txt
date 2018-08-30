@@ -1,0 +1,43 @@
+g++ -std=c++11 -O2 -I/usr/local/include  -pthread mainLinReg.cpp  libHEGWAS.a -o foo -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
+./foo "idashdata/covariates.txt" "idashdata/snpMat.txt"
+
++------------------------------------+
+|    0. Read the covariates & SNP    |
++------------------------------------+
+(sampleDim, factorDim, nsnp): (245,4,10643)
+(logN,logp,L,K,logQ) = (13,45,4,1,251)
+(dim,nslots,nencsnp) = (4,4096,3)
++------------------------------------+
+|           Key Generation           |
++------------------------------------+
+log(q[0]:62
+log(q[1]:46
+log(q[2]:46
+log(q[3]:45
+log(p[0]:56
+Scheme generation time= 0.336687 s
++------------------------------------+
+|             Encryption             |
++------------------------------------+
+Encryption time (X and snp) = 6.56647 s
++------------------------------------+
+|             Evaluation             |
++------------------------------------+
+1. Aggregation = 2.09243 s
+2. (X^T * X)^-1 = 0.350234 s
+1/(s^3) * Adj: [0.425327, -0.318801, -0.190336, -0.441545, 0.824187, -0.00194253, 0.0261445, 1.44047, -0.762911, 1.50709, ] 
+1/(s^3) * det: 4.6759 ?= 4.69093
+3. Norm = 0.426424 s
+logq: 1,1
+Total Evaluation Timing = 2.86908 s
++------------------------------------+
+|             Decryption             |
++------------------------------------+
+Decryption time = 0.00358245 s
++------------------------------------+
+|            Quality Check           |
++------------------------------------+
+Error (TP, FP, FN, TN) of pt/ct : 1,0.00599782,0,0.994002
++------------------------------------+
+|            Memory Check            |
++------------------------------------+
