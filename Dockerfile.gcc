@@ -1,14 +1,10 @@
-FROM ubuntu
+FROM gcc
 MAINTAINER Baiyu Li email: baiyu@ucsd.edu
 
 # Add the tar file of the web site 
 ADD gmp /usr/src/gmp
 ADD ntl /usr/src/ntl
 ADD IDASH18 /usr/src/IDASH18
-
-RUN apt-get update
-RUN apt-get install -y build-essential
-RUN apt-get install -y m4
 
 WORKDIR /usr/src
 WORKDIR gmp
