@@ -11,7 +11,7 @@
 #include "Context.h"
 #include "EvaluatorUtils.h"
 
-Context::Context(long logN, long logp, long L, long K, long h, double sigma) :
+Context::Context(long logN, long logp, long L, long K, long logq0, long logp0, long h, double sigma) :
 		logN(logN), logp(logp), L(L), K(K), h(h), sigma(sigma) {
 
 	N = 1L << logN;
@@ -43,7 +43,7 @@ Context::Context(long logN, long logp, long L, long K, long h, double sigma) :
     //! generate q0
 	bnd = 1;
 	while(1) {
-			uint64_t prime = (1ULL << Q0_BIT_SIZE) + bnd * M + 1;
+			uint64_t prime = (1ULL << logq0) + bnd * M + 1;
 			if(primeTest(prime)) {
 				qVec[0] = prime;
 				break;
@@ -107,7 +107,7 @@ Context::Context(long logN, long logp, long L, long K, long h, double sigma) :
 				mulMod(powerInv, powerInv, qRootsInv[i], qVec[i]);
 			}
 		}
-        cout << "log(q[" << i << "]):" <<  (long)ceil(log2(qVec[i])) << endl;
+        //cout << "log(q[" << i << "]):" <<  (long)ceil(log2(qVec[i])) << endl;
 	}
      
 	pVec = new uint64_t[K]();
@@ -127,19 +127,18 @@ Context::Context(long logN, long logp, long L, long K, long h, double sigma) :
 	NScaleInvModp = new uint64_t[K]();
 
 	// Generate Special Primes //
-#if 1
+ 
     bnd = 1;
     while(1) {
-        uint64_t prime = (1ULL << P0_BIT_SIZE) + bnd * M + 1;
+        uint64_t prime = (1ULL << logp0) + bnd * M + 1;
         if(primeTest(prime)) {
             pVec[0] = prime;
             break;
         }
         bnd++;
     }
-#endif
-#if 0
-	cnt = 0;
+
+	cnt = 1;
 	while(cnt < K) {
 		uint64_t prime1 = (1ULL << logp) + bnd * M + 1;
 		if(primeTest(prime1)) {
@@ -154,7 +153,7 @@ Context::Context(long logN, long logp, long L, long K, long h, double sigma) :
 		}
 		bnd++;
 	}
-#endif
+ 
 
 	for (long i = 0; i < K; ++i) {
 		pTwok[i] = (2 * ((long)log2(pVec[i]) + 1));
@@ -188,7 +187,7 @@ Context::Context(long logN, long logp, long L, long K, long h, double sigma) :
 				mulMod(powerInv, powerInv, pRootsInv[i], pVec[i]);
 			}
 		}
-        cout << "log(p[" << i << "]):" <<  (long)ceil(log2(pVec[i])) << endl;
+        //cout << "log(p[" << i << "]):" <<  (long)ceil(log2(pVec[i])) << endl;
 	}
 
 	qHatModq = new uint64_t*[L]; // [l][i] (phat_i)_l mod p_i

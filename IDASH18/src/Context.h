@@ -16,8 +16,8 @@
 #include "Common.h"
 #include "Numb.h"
 
-#define Q0_BIT_SIZE 61  /// -> logQ - logp = logl, precision bits of final output
-#define P0_BIT_SIZE 55  /// -> logp0
+//#define Q0_BIT_SIZE 60  /// -> logQ - logp = logl, precision bits of final output
+//#define P0_BIT_SIZE 61  /// -> logp0
 
 using namespace std;
 
@@ -117,7 +117,7 @@ public:
 	uint64_t* pccoeff;
 	uint64_t* p2hcoeff;
 
-	Context(long logN, long logp, long L, long K, long h = 64, double sigma = 3.2);
+	Context(long logN, long logp, long L, long K, long logq0 = 60, long logp0 = 61, long h = 64, double sigma = 3.2);
 
 	void arrayBitReverse(complex<double>* vals, const long size);
 	void arrayBitReverse(uint64_t* vals, const long size);
