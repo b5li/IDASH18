@@ -193,7 +193,12 @@ void CipherPvals::encryptSData(Ciphertext**& encSData, Ciphertext**& encYSData, 
                 j1++;
             }
             encSparselyPackedVec(encSXData[i][k][nencsnp-1], sparsevec[i], nslots1, nslots, L);
+
+            delete [] sxData[i][k];
         }
+        delete [] sxData[i];
+        delete [] fullvec[i];
+        delete [] sparsevec[i];
     }
     NTL_EXEC_RANGE_END;
     
