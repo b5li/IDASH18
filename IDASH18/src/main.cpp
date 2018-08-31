@@ -13,11 +13,11 @@ int main() {
 
 //    ExtTestScheme::testThreeProd(15, 6, 35, 1);
  
-//    ExtTestScheme::testDecompKS(15, 3, 40, 1);
+    ExtTestScheme::testDecompKS(15, 3, 40, 1);
     
 //    ExtTestScheme::testProdDecompKS(13, 5, 50, 0);
     
-   ExtTestScheme::testDecompRotate(14, 4, 1, 3, 40, 3);   // rot by (1 << 1), rot by 3
+//   ExtTestScheme::testDecompRotate(14, 4, 1, 3, 40, 3);   // rot by (1 << 1), rot by 3
     
 
 	return 0;

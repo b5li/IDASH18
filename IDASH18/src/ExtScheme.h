@@ -82,8 +82,6 @@ public:
     ExtCiphertext rawmult3(Ciphertext& cipher1, Ciphertext& cipher2, Ciphertext& cipher3);
     ExtCiphertext rawmult3_(Ciphertext& cipher1, Ciphertext& cipher2, Ciphertext& cipher3);
     
-    Ciphertext mult(Ciphertext& cipher1, Ciphertext& cipher2);
-    
     /********************************************************************/
     //! Homomorphic Key-switching using "modulus raising "
     Ciphertext ModRaiseKeySwitch(ExtCiphertext& cipher);
@@ -113,7 +111,13 @@ public:
     ExtCiphertext modDownTo(ExtCiphertext& cipher, long dl);
     void modDownToAndEqual(ExtCiphertext& cipher, long dl);
  
-   
+    /********************************************************************/
+    //! Raw multiplication + decomposition KS
+    Ciphertext square(Ciphertext& cipher);
+    void squareAndEqual(Ciphertext& cipher);
+    
+    Ciphertext mult(Ciphertext& cipher1, Ciphertext& cipher2);
+    void multAndEqual(Ciphertext& cipher1, Ciphertext& cipher2);
 };
 
 #endif

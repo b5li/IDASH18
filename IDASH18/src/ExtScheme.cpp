@@ -418,11 +418,6 @@ ExtCiphertext ExtScheme::rawmult(ExtCiphertext& cipher1, Ciphertext& cipher2){
     return ExtCiphertext(extax, bxbx, context.N, cipher1.slots, cipher1.l, deg);
 }
 
-//! raw multiplication + decomposition KS
-Ciphertext ExtScheme::mult(Ciphertext& cipher1, Ciphertext& cipher2){
-    ExtCiphertext cipher = rawmult(cipher1, cipher2);
-    return DecompKeySwitch(cipher);
-}
 
 //!@ expand (b1 + a1 * s) * (b2 + a2 * s)
 //!@ 9M, 6A
@@ -531,7 +526,6 @@ ExtCiphertext ExtScheme::rawmult3_(Ciphertext& cipher1, Ciphertext& cipher2, Cip
     
     return ExtCiphertext(extax, bx, context.N, cipher1.slots, cipher1.l, deg);
 }
-
 
 
 /**************************************************************************************/
@@ -697,8 +691,7 @@ Ciphertext ExtScheme::DecompKeySwitch(ExtCiphertext& cipher) {
     return Ciphertext(axres, bxres, context.N, cipher.slots, cipher.l);
 }
 
-
-
+/**************************************************************************************/
 //! Rotation by rotSlots (rotSlots: PoT)
 Ciphertext ExtScheme::leftRotateFast(Ciphertext& cipher, long rotSlots){
     
@@ -783,4 +776,26 @@ Ciphertext ExtScheme::rightRotate(Ciphertext& cipher, long rotSlots){
         }
     }
     return res;
+}
+
+/**************************************************************************************/
+//! raw multiplication + decomposition KS
+Ciphertext ExtScheme::mult(Ciphertext& cipher1, Ciphertext& cipher2){
+    ExtCiphertext extcipher = rawmult(cipher1, cipher2);
+    return DecompKeySwitch(extcipher);
+}
+
+void ExtScheme::multAndEqual(Ciphertext& cipher1, Ciphertext& cipher2){
+    ExtCiphertext extcipher = rawmult(cipher1, cipher2);
+    cipher1 = DecompKeySwitch(extcipher);
+}
+
+Ciphertext ExtScheme::square(Ciphertext& cipher){
+    ExtCiphertext extcipher = rawsquare(cipher);
+    return DecompKeySwitch(extcipher);
+}
+
+void ExtScheme::squareAndEqual(Ciphertext& cipher){
+    ExtCiphertext extcipher = rawsquare(cipher);
+    cipher = DecompKeySwitch(extcipher);
 }

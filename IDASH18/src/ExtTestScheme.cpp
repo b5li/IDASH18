@@ -280,9 +280,16 @@ void ExtTestScheme::testDecompKS(long logN,  long L, long logp, long logSlots){
     Ciphertext multCipher2 = extscheme.mult(cipher1, cipher2);
     timeutils.stop("Homomorphic Multiplication");
     scheme.reScaleByAndEqual(multCipher2, 1);
-
     
     dvecMult1 = scheme.decrypt(secretKey, multCipher2);
+    StringUtils::showcompare(mvecMult1, dvecMult1, slots, "raw0");
+    
+    timeutils.start("Homomorphic Multiplication (AndEqual) ");
+    extscheme.multAndEqual(cipher1, cipher2);
+    timeutils.stop("Homomorphic Multiplication");
+    scheme.reScaleByAndEqual(cipher1, 1);
+    
+    dvecMult1 = scheme.decrypt(secretKey, cipher1);
     StringUtils::showcompare(mvecMult1, dvecMult1, slots, "raw0");
     
     timeutils.start("Homomorphic Key Switching (s^2 & s^3)");
