@@ -187,6 +187,9 @@ Ciphertext Scheme::encryptMsg(Plaintext& message) {
 	context.addAndEqual(bx, ex, message.l);
 	context.addAndEqual(bx, message.mx, message.l);
 
+    delete [] vx;
+    delete [] ex;
+
 	return Ciphertext(ax, bx, context.N, message.slots, message.l);
 }
 

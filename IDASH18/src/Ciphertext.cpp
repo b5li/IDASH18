@@ -36,3 +36,14 @@ Ciphertext& Ciphertext::operator=(const Ciphertext& o) {
 	}
 	return *this;
 }
+
+
+
+Ciphertext::~Ciphertext() {
+   if(ax) {
+      delete [] ax;
+   }
+   if(bx) {
+      delete [] bx;
+   }
+}
