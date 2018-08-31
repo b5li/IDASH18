@@ -52,10 +52,10 @@ void TestHEPvals::testFastHELinReg(double*& zScore, double*& pVals, double* yDat
     long nslots = (1<< (logN-1));      //! total number of plaintext slots
     long L = 4;                        //! 2 (det,adj) + 1 (multiplied by det,adj) + 1 (decoding)
     long K = 1;
-    long h = 130;                       //! Hamming weight of sk
+    long h = 130;                      //! Hamming weight of sk
     
     //! Parameters for GWAS
-    long scaleBits = 4;            //! scale factor for covariance
+    long scaleBits = 4;                //! scale factor for covariance
     long sampleDim2 = (1 << (long)ceil(log2(sampleDim)));   //! closet PoT
     long sdimBits = (long)ceil(log2(sampleDim));            //! log2(sampleDim)
     long factorDim2 = factorDim * factorDim;

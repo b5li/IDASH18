@@ -16,10 +16,6 @@
 #include <vector>
 #include <string>
 
-#include "NTL/RR.h"
-#include "NTL/mat_RR.h"
-#include "NTL/vec_RR.h"
-
 #include "../src/Scheme.h"
 #include "../src/SecretKey.h"
 
