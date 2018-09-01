@@ -31,6 +31,9 @@ public:
 	// Copy constructor
 	ExtCiphertext(const ExtCiphertext& cipher);
 	ExtCiphertext& operator=(const ExtCiphertext &o);
+
+   // Destructor
+   ~ExtCiphertext();
 	
 };
 

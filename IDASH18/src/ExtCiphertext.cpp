@@ -64,4 +64,19 @@ ExtCiphertext& ExtCiphertext::operator=(const ExtCiphertext& o) {
     
     return *this;
 }
+
+ExtCiphertext::~ExtCiphertext() {
+   if(ax) {
+      for(long j = 0; j < deg; j++) {
+         if(ax[j]) {
+            delete [] ax[j];
+         }
+      }
+      delete [] ax;
+   }
+   if(bx) {
+      delete [] bx;
+   }
+}
+
  
