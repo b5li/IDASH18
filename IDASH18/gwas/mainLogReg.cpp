@@ -3,31 +3,30 @@
 #include <stdexcept>
 #include <string>
 
-#define USE_NTL 1
-#ifdef USE_NTL
 #include <NTL/BasicThreadPool.h>
-#endif
-#include "threadpool.h"
+#include <cstdlib>
+#include <iostream>
+#include <stdexcept>
+#include <string>
 
 #include "Database.h"
 #include "BasicTest.h"
-#include "TestLinRegPvals.h"
-#include "TestHELinRegPvals.h"
 
-#include "sys.h"
+#include "TestLinRegPvals.h"
+#include "TestLogRegPvals.h"
+
+#include "TestHELinRegPvals.h"
+#include "TestHELogRegPvals.h"
 
 using namespace std;
 using namespace NTL;
 
-/* make testlinreg */
+/* make testlogreg */
 
 int main(int argc, char **argv) {
 	
-#ifdef USE_NTL
-    SetNumThreads(4);
-#else
-    IDASH::initThreadPool(4);
-#endif
+	SetNumThreads(4);
+    
 	string covariate_filename(argv[1]);     // path to covariate file
     string snp_filename(argv[2]);           // path to snp file
     
@@ -35,17 +34,16 @@ int main(int argc, char **argv) {
     
     cout << endl;
     cout << "+------------------------------------+" << endl;
-    cout << "|    0. Read the covariates & SNP    |" << endl;
+    cout << "|    1. Read the covariates & SNP    |" << endl;
     cout << "+------------------------------------+" << endl;
     
- 
     long sampleDim = 0, ncols = 1;
     vector<string> tag;
     vector<vector<string>> covfile;
     char covfile_split_char = ',';
     DataFromFile(tag, covfile, covariate_filename, ncols, sampleDim, covfile_split_char);
     long factorDim = ncols - 1;   //! number(covariates + outcome), original Data has id numbers
-
+    
     long snp_sampleDim = 0, nsnp = 0;
     vector<string> snptag;
     vector<vector<string>> snpfile;
@@ -65,38 +63,35 @@ int main(int argc, char **argv) {
     ListzData(yData, xData, factorDim, sampleDim, tag, covfile);
     ListsData(sData, nsnp, sampleDim,  snpfile);
     normalizeData(xData, xData, factorDim, sampleDim);
- 
+    
     //! y ~ glm(X) <-> (2y-1) ~ glm(X)
     for(long i = 0; i < sampleDim; ++i){
         yData[i] = (2 * yData[i] - 1);
     }
+    
+    double* zScore = new double[nsnp];
+    double* pVals = new double[nsnp];
+    
+    long testsigdeg = 3;
+    long numIter = 3;
 
-    //! Evaluation
-    double* zScore_ct;
-    double* pVals_ct;
- 
-    TestHEPvals::testFastHELinReg(zScore_ct, pVals_ct, yData, xData, sData, factorDim, sampleDim, nsnp, "LinRegResult/FastHELinReg_Pvals.txt");
- 
+    //TestLRPvals::testLogRegGD(zScore, pVals, yData, xData, sData, factorDim, sampleDim, nsnp, 3, testsigdeg, numIter, 1,  1, "LogRegResult/Plain_Pvals_deg3.txt");
+    TestHELRPvals::testHELogReg(zScore, pVals, yData, xData, sData, factorDim, sampleDim, nsnp, "LogRegResult/HE_Pvals.txt");
+    //TestHELRPvals::testHELogReg_accuracy(zScore, pVals, yData, xData, sData, factorDim, sampleDim, nsnp, numIter, testsigdeg, "LogRegResult/HE_Pvals_deg7.txt");
+    
+    //TestHELRPvals::testHELogReg_block8(zScore_ct, pVals, yData, xData, sData, factorDim, sampleDim, nsnp, "LogRegResult/HE_Pvals.txt");
+#if 1
     cout << "+------------------------------------+" << endl;
-    cout << "|            Quality Check           |" << endl;
+    cout << "|          2. Quality Check          |" << endl;
     cout << "+------------------------------------+" << endl;
     
-    //! origianl semi-parallel logistic regression (plaintext)
-    double* zScore_pt;
+    // origianl regression (plaintext)
     double* pVals_pt;
-    SimpleDataFromFile(pVals_pt, "LinRegResult/Plain_Pvals.txt");
+    SimpleDataFromFile(pVals_pt, "LogRegResult/Plain_Pvals.txt");
     
     double TP, FP, FN, TN;
-    pvalsError(TP, FP, FN, TN, pVals_ct, pVals_pt, nsnp, siglevel);
-    
+    pvalsError(TP, FP, FN, TN, pVals, pVals_pt, nsnp, siglevel);
     cout << "Error (TP, FP, FN, TN) of pt/ct : " << TP << "," <<  FP << ","  << FN << "," << TN << endl;
-
-    cout << "+------------------------------------+" << endl;
-    cout << "|            Memory Check            |" << endl;
-    cout << "+------------------------------------+" << endl;
-    //MemoryUsage mem = getMemoryUsage();
-    //cout << "Peak memory = " << mem.vmpeak/1024 << "KB" << std::endl;
-    //cout << "Curr memory = " << mem.vmrss/1024  << "KB" << std::endl;
- 
+#endif
 	return 0;
 }

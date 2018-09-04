@@ -57,9 +57,9 @@ public:
     /********************************************************************/
     //! Encryption functions for data
     
-    void encryptSData(Ciphertext**& encSData, Ciphertext**& encYSData, Ciphertext***& encSXData,  double* yData, double** xData, double** sData,  long factorDim, long sampleDim, long nsnp, long nencsnp, long nslots, long L) ;
+    void encryptSData(Ciphertext**& encSData, Ciphertext**& encYSData, Ciphertext***& encSXData,  double* yData, double** xData, double** sData,  long factorDim, long sampleDim, long nsnp, long nencsnp, long nslots, long Slvl, long YSlvl, long SXlvl) ;
     
-    void encryptSIMDXData(Ciphertext& encYXData, Ciphertext*& enccovData, double* yData, double** xData, long factorDim, long sampleDim, long sampleDim2, long nXbatching, long nCovbatching, long nterms, long scaleBits, long nslots, long L) ;
+    void encryptSIMDXData(Ciphertext& encYXData, Ciphertext*& enccovData, double* yData, double** xData, long factorDim, long sampleDim, long sampleDim2, long nXbatching, long nCovbatching, long nterms, long scaleBits, long nslots, long YXlvl, long Covlvl) ;
     
     
     void decryptResult(double& Ynorm, double**& YSnorm, double**& Snorm, Ciphertext encYnorm, Ciphertext* encYSnorm, Ciphertext* encSnorm, long nencsnp, long nslots);
@@ -67,23 +67,6 @@ public:
     /********************************************************************/
     
     //! Functions using decomposition KS
-    void aggYXData_DecompKS(Ciphertext*& encYX, Ciphertext encYXData, long sdimBits, long nbatching, long factorDim, long nslots);
-    
-    void aggCovData_DecompKS(Ciphertext*& encCov, Ciphertext* enccovData,  long sdimBits, long nbatching);
-    
-    void fullReplicate4_DecompKS(Ciphertext*& res, Ciphertext Data, long nslots);
-    
-    void encSIMDAdjoint_DecompKS(Ciphertext& encDet, Ciphertext*& encAdj, Ciphertext* encData);
-    
-    void extQuadForm_DecompKS(Ciphertext& res, Ciphertext* encData1, Ciphertext* encMatrix, Ciphertext* encData2, long factorDim);
-    
-    void extSqrQuadForm_DecompKS(Ciphertext& res, Ciphertext* encData, Ciphertext* encMatrix, long factorDim);
-    
-    
-    /********************************************************************/
-    //! Functions using Mod-raising KS
-    
-    void encryptXData(Ciphertext**& encYXData, Ciphertext**& enccovData, double* yData, double** xData, long factorDim, long sampleDim, long nterms, long scalefactor, long nslots, long L) ;
     void aggYXData(Ciphertext*& encYX, Ciphertext encYXData, long sdimBits, long nbatching, long factorDim, long nslots);
     
     void aggCovData(Ciphertext*& encCov, Ciphertext* enccovData,  long sdimBits, long nbatching);
@@ -92,22 +75,16 @@ public:
     
     void encSIMDAdjoint(Ciphertext& encDet, Ciphertext*& encAdj, Ciphertext* encData);
     
-    void encSIMDAdjoint_smalldep(Ciphertext& encDet, Ciphertext*& encAdj, Ciphertext* encData);
-    
-    void QuadForm(Ciphertext& res, Ciphertext* encData1, Ciphertext* encMatrix, Ciphertext* encData2, long factorDim);
-    
-    void SqrQuadForm(Ciphertext& res, Ciphertext* encData, Ciphertext* encMatrix, long factorDim);
-    
-    void extencAdjoint(Ciphertext& encDet, Ciphertext*& encAdj, Ciphertext* encData);
-    
     void extQuadForm(Ciphertext& res, Ciphertext* encData1, Ciphertext* encMatrix, Ciphertext* encData2, long factorDim);
     
     void extSqrQuadForm(Ciphertext& res, Ciphertext* encData, Ciphertext* encMatrix, long factorDim);
     
-    //! just encrypt (for testging)
-    void HesInverse(Ciphertext& encDet, Ciphertext*& encAdj, Ciphertext** enccovData, long dim, long nslots, long L);
     
-    void encAdjoint(Ciphertext& encDet, Ciphertext*& encAdj, Ciphertext* encData);
+    /********************************************************************/
+    //! Functions using Mod-raising KS
+    
+    void encryptXData(Ciphertext**& encYXData, Ciphertext**& enccovData, double* yData, double** xData, long factorDim, long sampleDim, long nterms, long scalefactor, long nslots, long L) ;
+ 
 };
 
 

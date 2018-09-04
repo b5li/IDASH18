@@ -23,8 +23,7 @@ LIBS    = -lntl -lm
 #
 ###############################################################
 
-HEADER = Database.h  BasicTest.h TestLinRegPvals.h CipherLinRegPvals.h TestHELinRegPvals.h threadpool.h 
-# CipherLogRegPvals.h TestLogRegPvals.h TestHELogRegPvals.h sys.h
+HEADER = Database.h  BasicTest.h TestLinRegPvals.h CipherLinRegPvals.h TestHELinRegPvals.h threadpool.h CipherLogRegPvals.h TestLogRegPvals.h TestHELogRegPvals.h sys.h
 
 SRC = $(HEADER:.h=.cpp)   
 
@@ -54,11 +53,11 @@ new:
 
 testlinreg:
 	g++ -std=c++11 -O2 -I/usr/local/include $(TPFLAGS) -pthread mainLinReg.cpp  libHEGWAS.a -o foo -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
-	 ./foo "idashdata/covariates.txt" "idashdata/snpMat.txt"
+	 /usr/bin/time ./foo "idashdata/covariates.txt" "idashdata/snpMat.txt"
 
 testlogreg:
 	g++ -std=c++11 -O2 -I/usr/local/include $(TPFLAGS) -pthread mainLogReg.cpp  libHEGWAS.a -o foo -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
-	 ./foo "idashdata/covariates.txt" "idashdata/snpMat.txt"
+	 /usr/bin/time -l ./foo "idashdata/covariates.txt" "idashdata/snpMat.txt"
 
 obj: $(OBJ)
 
