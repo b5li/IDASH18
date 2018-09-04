@@ -5,3 +5,4 @@
 # install libHEGWAS.a
 1. $make new in the run directory
 2. $make testlinreg
+3. $make testlogreg
