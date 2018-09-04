@@ -366,10 +366,14 @@ void ExtTestScheme::testDecompRotate(long logN,  long L, long logRotSlots, long 
     extscheme.addDecompThreeKeys(secretKey);
     
     extscheme.addDecompLeftRotKeys(secretKey);
-    extscheme.addDecompRightRotKeys(secretKey);
+    //extscheme.addDecompRightRotKeys(secretKey);
+    
+    for(long i = 0; i < 2; ++i){
+        extscheme.addDecompRightRotKey(secretKey, 1 << i); //! 1, 2 (-> 3)
+    }
+    
     
     long slots = (1 << logSlots);
-
     complex<double>* mvec = EvaluatorUtils::randomComplexArray(slots);
     complex<double>* mvec1 = EvaluatorUtils::randomComplexArray(slots);
     complex<double>* mvec2 = EvaluatorUtils::randomComplexArray(slots);
@@ -394,7 +398,7 @@ void ExtTestScheme::testDecompRotate(long logN,  long L, long logRotSlots, long 
     Ciphertext cipher = scheme.encrypt(mvec, slots, L);
     timeutils.stop("Encrypt two batch");
     
-#if 0
+#if 1
     Ciphertext multCipher = extscheme.mult(cipher, cipher);
     scheme.reScaleByAndEqual(multCipher, 1);
     
@@ -434,7 +438,8 @@ void ExtTestScheme::testDecompRotate(long logN,  long L, long logRotSlots, long 
     
     EvaluatorUtils::leftRotateAndEqual(mvec2, slots, RotSlots);
     StringUtils::showcompare(mvec2, dvec2, slots, "rot");
- 
+#endif
+    
     /**********************************************************/
     timeutils.start("Homomorphic Right Rotation Fast");
     RotSlots1 = (1 << logRotSlots);
@@ -464,7 +469,7 @@ void ExtTestScheme::testDecompRotate(long logN,  long L, long logRotSlots, long 
     
     EvaluatorUtils::rightRotateAndEqual(mvec4, slots, RotSlots);
     StringUtils::showcompare(mvec4, dvec2, slots, "rot");
-#endif
+ 
 }
  
 
