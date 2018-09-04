@@ -34,6 +34,10 @@ public:
 	Ciphertext(const Ciphertext& cipher);
 	Ciphertext& operator=(const Ciphertext &o);
 
+    // Move constructor/assignment operator
+    Ciphertext(Ciphertext&& cipher);
+    Ciphertext& operator=(Ciphertext&& cipher);
+
     ~Ciphertext();
 	
 };

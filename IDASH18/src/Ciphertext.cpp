@@ -10,7 +10,7 @@
 
 Ciphertext::Ciphertext() : ax(nullptr), bx(nullptr), N(0), slots(0), l(0) {}
 
-Ciphertext::Ciphertext(uint64_t* ax, uint64_t* bx, long N, long slots, long l) : ax(ax), bx(bx), N(N), slots(slots), l(l){}
+Ciphertext::Ciphertext(uint64_t* _ax, uint64_t* _bx, long _N, long _slots, long _l) : ax(_ax), bx(_bx), N(_N), slots(_slots), l(_l) { }
 
 Ciphertext::Ciphertext(const Ciphertext& cipher) : N(cipher.N), slots(cipher.slots), l(cipher.l) {
 	ax = new uint64_t[N * l];
@@ -38,6 +38,31 @@ Ciphertext& Ciphertext::operator=(const Ciphertext& o) {
 }
 
 
+Ciphertext::Ciphertext(Ciphertext&& cipher) : N(cipher.N), slots(cipher.slots), l(cipher.l) {
+  ax = cipher.ax;               // obtain the array pointer from other
+  bx = cipher.bx;
+  cipher.ax = nullptr;          // move is done so we clear the other
+  cipher.bx = nullptr;
+}
+
+Ciphertext& Ciphertext::operator=(Ciphertext&& o) {
+  if(this == &o) return *this;
+  delete[] ax;
+  delete[] bx;
+
+  ax = o.ax;                    // obtain the pointers and other fields from other
+  bx = o.bx;
+  N = o.N;
+  l = o.l;
+  slots = o.slots;
+
+  o.ax = nullptr;               // clear the other
+  o.bx = nullptr;
+
+  return *this;
+}
+
+  
 
 Ciphertext::~Ciphertext() {
    if(ax) {

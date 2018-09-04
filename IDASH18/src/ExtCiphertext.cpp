@@ -65,6 +65,36 @@ ExtCiphertext& ExtCiphertext::operator=(const ExtCiphertext& o) {
     return *this;
 }
 
+// Move constructor
+ExtCiphertext::ExtCiphertext(ExtCiphertext&& cipher) : N(cipher.N), slots(cipher.slots), l(cipher.l), deg(cipher.deg) {
+   ax = cipher.ax;              // obtain the pointers from other
+   bx = cipher.bx;
+   cipher.ax = nullptr;         // move is done so we clear other
+   cipher.bx = nullptr;
+}
+
+// Move copy assignment operator
+ExtCiphertext& ExtCiphertext::operator=(ExtCiphertext&& o) {
+    if(this == &o){
+        return *this; // handling of self assignment, thanks for your advice, arul.
+    }
+
+    delete[] bx;
+    delete[] ax;
+
+    ax = o.ax;                  // obtain the pointers from other
+    bx = o.bx;
+    N = o.N;
+    l = o.l;
+    slots = o.slots;
+    deg = o.deg;
+    
+    o.ax = nullptr;             // clear the other
+    o.bx = nullptr;
+    
+    return *this;
+}
+
 ExtCiphertext::~ExtCiphertext() {
    if(ax) {
       for(long j = 0; j < deg; j++) {

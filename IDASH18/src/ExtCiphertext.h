@@ -32,8 +32,12 @@ public:
 	ExtCiphertext(const ExtCiphertext& cipher);
 	ExtCiphertext& operator=(const ExtCiphertext &o);
 
-   // Destructor
-   ~ExtCiphertext();
+    // Move constructor/assignment operator
+    ExtCiphertext(ExtCiphertext&& cipher);
+	ExtCiphertext& operator=(ExtCiphertext&& o);
+
+    // Destructor
+    ~ExtCiphertext();
 	
 };
 
