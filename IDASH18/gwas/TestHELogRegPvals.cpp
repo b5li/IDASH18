@@ -61,24 +61,20 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     
     long logN = 15;
     long nslots = (1 << (logN-1));     //! total number of plaintext slots
-    long L = 24;                       //! 9 (LogReg) + 4 (Pr) + 1 (W) + 5 (Z, two-inverse) + 2 (Z^T * X) + 1 (multiplied by adj * XW2S)= 22
+    long L = 23;                       //! 9 (LogReg) + 4 (Pr) + 1 (W) + 5 (Z, two-inverse) + 2 (Z^T * X) + 1 (multiplied by adj * XW2S)= 22
     long K = 1;
-    long h = 256;                       //! Hamming weight of sk (logq = 1103)
+    long h = 170;                       //! Hamming weight of sk (logq = 1060)
     
     //! encryption level for snp data
     long Slvl = 3;
-#if ver1
     long SXlvl = 3;    //! encW2.lvl,  fast: L - 19;
-#endif
-#if ver2
-    long SXlvl = 4;
-#endif
+
     
     //! encryption level for Xdata
     long YXlvl = L;
     long Xlvl = L - 9;      //! encBeta.lvl = 1 + (2 + log2(deg(sigmoid))) * (iter)
     long Ylvl = L - 13;     //! encPr.lvl
-    long Covlvl = L - 18;
+    long Covlvl = 6;
 
     //! Parameters
     long sampleDim2 = (1 << (long)ceil(log2(sampleDim)));   //! closet PoT
@@ -200,12 +196,12 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     // "+------------------------------------+"
     start = chrono::steady_clock::now();
     
-    Ciphertext encZData;  //! (L - 9) - 10 = L - 19
+    Ciphertext encZData;  //! (L - 9) - 9 = L - 18
     Ciphertext encWData;  //! (L - 9) - 5  = L - 14
     Ciphertext encW2Data; //! (L - 9) - 6 = L - 15
     Ciphertext encZWData; //! (L - 9) - 6 = L - 15
     
-    long steps = 4; //! degree for approximation of 1/p*(1-p)
+    long steps = 3; //! degree for approximation of 1/p*(1-p)
     cipherLRPvals.encZWData(encZData, encWData, encW2Data, encZWData, encBeta, encXData, encYData, poly, fdimBits, steps);
     
     end = std::chrono::steady_clock::now();
@@ -227,7 +223,7 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     Ciphertext* encAdj = new Ciphertext[10];    //! (L - 21) or (L - 20) = 3
     Ciphertext encDet;
     
-    Ciphertext encWData1 = scheme.modDownBy(encWData, 4);
+    Ciphertext encWData1 = scheme.modDownBy(encWData, 3);
     cipherLRPvals.encAdjoint(encDet, encAdj, encWData1, enccovData, sdimBits, nCovbatching); //! (X^T * W * X)
     
     end = std::chrono::steady_clock::now();
@@ -261,7 +257,6 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
 
     Ciphertext* encZX = new Ciphertext[factorDim];
     cipherLRPvals.encZXData(encZX, encXData, encZData, sdimBits, nXbatching, factorDim, nslots); // [-43.8965903, -7.693702862, -7.157768273, -18.84315905]
-    
     
     end = std::chrono::steady_clock::now();
     diff = end - start;
@@ -322,8 +317,7 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     start = chrono::steady_clock::now();
     
     Ciphertext* encZWS = new Ciphertext[nencsnp];
-    Ciphertext encZWData1 = scheme.modDownBy(encZWData, 1); //! (L - 15) -> (L - 16)
-    cipherLRPvals.encVecSData(encZWS, encZWData1, encSData, poly0, poly1, sampleDim, nencsnp, nslots, subblocksize, niter, nstep, nblock[0], rot);
+    cipherLRPvals.encVecSData(encZWS, encZWData, encSData, poly0, poly1, sampleDim, nencsnp, nslots, subblocksize, niter, nstep, nblock[0], rot);
     
     end = std::chrono::steady_clock::now();
     diff = end - start;
@@ -339,7 +333,7 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     start = chrono::steady_clock::now();
     
     Ciphertext* encSWS = new Ciphertext[nencsnp];
-    encWData1 = scheme.modDownBy(encWData, 2); //! (L - 14) -> (L - 16)
+    encWData1 = scheme.modDownBy(encWData, 1); //! (L - 14) -> (L - 15)
     cipherLRPvals.encVecSData(encSWS, encWData1, encSData, poly0, poly1, sampleDim, nencsnp, nslots, subblocksize, niter, nstep, nblock[0], rot);
 
     end = std::chrono::steady_clock::now();
@@ -357,8 +351,7 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     start= chrono::steady_clock::now();
     
     Ciphertext** encW2SX = new Ciphertext*[nencsnp];
-    Ciphertext encW2Data1 = scheme.modDownBy(encW2Data, 1); //! (L - 15) -> (L - 16)
-    cipherLRPvals.encVecMultipleSData(encW2SX, encW2Data1, encSXData, poly0, poly1, factorDim, sampleDim, nencsnp, nslots, subblocksize, niter, nstep, nblock[0], rot);
+    cipherLRPvals.encVecMultipleSData(encW2SX, encW2Data, encSXData, poly0, poly1, factorDim, sampleDim, nencsnp, nslots, subblocksize, niter, nstep, nblock[0], rot);
     
     end = std::chrono::steady_clock::now();
     diff = end - start;
@@ -433,12 +426,8 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
         
         Ciphertext res0; //! L - 22 = 1
         Ciphertext res1; //! L - 22 = 1
-#if ver1
+
         cipherLRPvals.extQuadForm(res0, res1, encZX, encSX1, encAdj, encW2SX[j], factorDim);
-#endif
-#if ver2
-        cipherLRPvals.extQuadForm16(res0, res1, encZX, encSX1, encAdj, encW2SX[j], factorDim);
-#endif
         
         scheme.modDownToAndEqual(encZSnorm[j], res0.l);
         scheme.subAndEqual(encZSnorm[j], res0);
