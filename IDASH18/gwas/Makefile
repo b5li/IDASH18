@@ -57,7 +57,7 @@ testlinreg:
 
 testlogreg:
 	g++ -std=c++11 -O2 -I/usr/local/include $(TPFLAGS) -pthread mainLogReg.cpp  libHEGWAS.a -o foo -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
-	 /usr/bin/time -l ./foo "idashdata/covariates.txt" "idashdata/snpMat.txt"
+	 /usr/bin/time ./foo "idashdata/covariates.txt" "idashdata/snpMat.txt"
 
 obj: $(OBJ)
 
