@@ -47,12 +47,12 @@
 void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData, double** xData, double** sData, long factorDim, long sampleDim, long nsnp, string filename){
     
     struct rusage usage;
-    long memoryscale = (1 << 20);
+    long memoryscale = (1 << 20);   //! 2^20: linux, 2^30: mac
     
     //! Parameters for GWAS
     long YXscaleBits = 2;
-    long covscaleBits = 2;  //! scale factor for covariance
-    long subblocksize = 16;  //! size of subblocks for fully replicating size-n vector
+    long covscaleBits = 2;      //! scale factor for covariance
+    long subblocksize = 16;     //! size of subblocks for fully replicating size-n vector
     
     //! HE Parameters
     long logp = 43;                    //! all the msg are scaled by "p", logq0 - logp = (final bits of precision), logp: scaled bit
@@ -135,7 +135,7 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     int ret = getrusage(RUSAGE_SELF, &usage);
     cout<< "Memory Usage : " << (double) usage.ru_maxrss/(memoryscale)  << "(GB)" << endl;
     
-#if 1
+
     cout << "+------------------------------------+" << endl;
     cout << "|             Encryption             |" << endl;
     cout << "+------------------------------------+" << endl;
@@ -194,7 +194,7 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     totalEvaltime = timeElapsed;
     ret = getrusage(RUSAGE_SELF, &usage);
     cout<< "Memory Usage : " << (double) usage.ru_maxrss/(memoryscale)  << "(GB)" << endl;
-    
+
     // "+------------------------------------+"
     //! 2. Update the weights
     // "+------------------------------------+"
@@ -217,22 +217,18 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     cout<< "Memory Usage : " << (double) usage.ru_maxrss/(memoryscale)  << "(GB)" << endl;
     
     delete[] poly;
-    
+ #if 1
     // "+------------------------------------+"
     //! 3.1. Hessian: encAdj[4], encDet
     // "+------------------------------------+"
     
     start = chrono::steady_clock::now();
     
-    Ciphertext* encCov = new Ciphertext[34];    //! (L - 14) -> (L - 18) or (L - 17) -> (L - 19) or (L - 18) = 4
     Ciphertext* encAdj = new Ciphertext[10];    //! (L - 21) or (L - 20) = 3
     Ciphertext encDet;
     
-    Ciphertext encWData1;
-    encWData1 = scheme.modDownBy(encWData, 4);
-    
-    cipherLRPvals.encWcov(encCov, encWData1, enccovData, sdimBits, nCovbatching); //! (X^T * W * X)
-    cipherPvals.encSIMDAdjoint(encDet, encAdj, encCov);
+    Ciphertext encWData1 = scheme.modDownBy(encWData, 4);
+    cipherLRPvals.encAdjoint(encDet, encAdj, encWData1, enccovData, sdimBits, nCovbatching); //! (X^T * W * X)
     
     end = std::chrono::steady_clock::now();
     diff = end - start;
@@ -243,7 +239,6 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     cout<< "Memory Usage : " << (double) usage.ru_maxrss/(memoryscale)  << "(GB)" << endl;
     
     delete[] enccovData;
-    delete[] encCov;
     
 #if defined(__DEBUG_)
     double dtemp;
@@ -720,23 +715,17 @@ void TestHELRPvals::testHELogReg_accuracy(double*& zScore, double*& pVals, doubl
     
     start = chrono::steady_clock::now();
     
-    Ciphertext* encCov = new Ciphertext[34];    //! (L - 14) -> (L - 18) or (L - 17) -> (L - 19) or (L - 18) = 4
     Ciphertext* encAdj = new Ciphertext[10];    //! (L - 21) or (L - 20) = 3
     Ciphertext encDet;
     
-    Ciphertext encWData1;
-    encWData1 = scheme.modDownBy(encWData, 4);
-    
-    cipherLRPvals.encWcov(encCov, encWData1, enccovData, sdimBits, nCovbatching); //! (X^T * W * X)
-    cipherPvals.encSIMDAdjoint(encDet, encAdj, encCov);
+    Ciphertext encWData1 = scheme.modDownBy(encWData, 4);
+    cipherLRPvals.encAdjoint(encDet, encAdj, encWData1, enccovData, sdimBits, nCovbatching); //! (X^T * W * X)
     
     end = std::chrono::steady_clock::now();
     diff = end - start;
     timeElapsed = chrono::duration <double, milli> (diff).count()/1000.0;
     cout << "3.1. (X^T * W *  X)^-1 = " << timeElapsed << " s" << endl;
     totalEvaltime += timeElapsed;
-    
-    delete[] encCov;
     
 #if 1
     double dtemp;

@@ -69,11 +69,11 @@ public:
     //! Functions using decomposition KS
     void aggYXData(Ciphertext*& encYX, Ciphertext encYXData, long sdimBits, long nbatching, long factorDim, long nslots);
     
-    void aggCovData(Ciphertext*& encCov, Ciphertext* enccovData,  long sdimBits, long nbatching);
+    //void aggCovData(Ciphertext*& encCov, Ciphertext* enccovData,  long sdimBits, long nbatching);
     
     void fullReplicate4(Ciphertext*& res, Ciphertext Data, long nslots);
     
-    void encSIMDAdjoint(Ciphertext& encDet, Ciphertext*& encAdj, Ciphertext* encData);
+    void encAdjoint(Ciphertext& encDet, Ciphertext*& encAdj, Ciphertext* enccovData,  long sdimBits, long nbatching);
     
     void extQuadForm(Ciphertext& res, Ciphertext* encData1, Ciphertext* encMatrix, Ciphertext* encData2, long factorDim);
     

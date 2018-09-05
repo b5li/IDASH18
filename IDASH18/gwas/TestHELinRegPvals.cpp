@@ -184,39 +184,22 @@ void TestHEPvals::testFastHELinReg(double*& zScore, double*& pVals, double* yDat
     NTL_EXEC_RANGE_END;
     
     //! encYX[k] = YXvec = y^T * X[k] = [-29, -6.506140997, -6.368385672, -12.88024343]
-    //! 24 Rot
     Ciphertext* encYX = new Ciphertext[factorDim];
     cipherPvals.aggYXData(encYX, encYXData, sdimBits, nXbatching, factorDim, nslots);
     
-    //! (34 * 8) Rot
-    Ciphertext* encCov = new Ciphertext[34];
-    cipherPvals.aggCovData(encCov, enccovData, sdimBits, nCovbatching);
-    
-    
-    end = std::chrono::steady_clock::now();
-    diff = end - start;
-    timeElapsed = chrono::duration <double, milli> (diff).count()/1000.0;
-    cout << "1. Aggregation = " << timeElapsed << " s" << endl;
-    totalEvaltime = timeElapsed;
     
     // "+------------------------------------+"
     //! 2. Hessian
     // "+------------------------------------+"
     
-    start = chrono::steady_clock::now();
-    
+
     Ciphertext* encAdj = new Ciphertext[10];
     Ciphertext encDet;
     
-    cipherPvals.encSIMDAdjoint(encDet, encAdj, encCov);     //! L = 4
+    cipherPvals.encAdjoint(encDet, encAdj, enccovData, sdimBits, nCovbatching);
+
     
-    end = std::chrono::steady_clock::now();
-    diff = end - start;
-    timeElapsed = chrono::duration <double, milli> (diff).count()/1000.0;
-    cout << "2. (X^T * X)^-1 = " << timeElapsed << " s" << endl;
-    totalEvaltime += timeElapsed;
-    
-#if 1
+#if defined(__DEBUG_)
     double dtemp;
     cout << "1/(s^3) * Adj: [" ;
     for(long l = 0; l < nterms; ++l){
@@ -235,8 +218,7 @@ void TestHEPvals::testFastHELinReg(double*& zScore, double*& pVals, double* yDat
     //! encwtYX = (y^T * X) * adj(X^T * X) * (X^T * y)
     //! Ynorm = |A| <Y,Y> - wtYX = |A| * sampleDim - wtYX
     
-    start= chrono::steady_clock::now();
-    
+
     Ciphertext encWtYX;
     cipherPvals.extSqrQuadForm(encWtYX, encYX, encAdj, factorDim);     //! L - 3
     
@@ -288,9 +270,9 @@ void TestHEPvals::testFastHELinReg(double*& zScore, double*& pVals, double* yDat
     end = std::chrono::steady_clock::now();
     diff = end - start;
     timeElapsed = chrono::duration <double, milli> (diff).count()/1000.0;
-    cout << "3. Norm = " << timeElapsed << " s" << endl;
+    //cout << "3. Norm = " << timeElapsed << " s" << endl;
     //cout << "logq: " << encYSnorm[0].l  << "," << encSnorm[0].l << endl;   // L - 3
-    totalEvaltime += timeElapsed;
+    totalEvaltime = timeElapsed;
     cout << "Total Evaluation Timing = " << totalEvaltime << " s" << endl;
     ret = getrusage(RUSAGE_SELF, &usage);
     cout<< "Memory Usage : " << (double) usage.ru_maxrss/(memoryscale)  << "(GB)" << endl;
@@ -356,7 +338,6 @@ void TestHEPvals::testFastHELinReg(double*& zScore, double*& pVals, double* yDat
     delete[] encS;
     delete[] encSX;
     delete[] encYX;
-    delete[] encCov;
     delete[] encAdj;
     delete[] encWtYS;
     delete[] encYSnorm;

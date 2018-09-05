@@ -44,7 +44,7 @@ public:
     
 	uint64_t* generateNLGDAuxPoly(long nslots, long nslots1, long batch);
 
-    void encNLGDiteration0(Ciphertext& encWData, Ciphertext& encVData, Ciphertext& encGrad, Ciphertext encYXData, long sdimBits, long xBatchingBits, double gamma, double eta);
+    void encNLGDiteration0(Ciphertext*& encData, Ciphertext& encGrad, Ciphertext encYXData, long sdimBits, long xBatchingBits, double gamma, double eta);
     
     void encNLGDiteration1(Ciphertext& encWData, Ciphertext& encVData, Ciphertext encYXData, Ciphertext encW0Data, Ciphertext encGrad2, uint64_t* poly, long fdimBits, long sdimBits, long xBatchingBits, double gamma);
     
@@ -59,7 +59,7 @@ public:
   
 	/********************************************************************/
     
-    void encWcov(Ciphertext*& encCov, Ciphertext encWData, Ciphertext* enccovData, long sdimBits, long nCovbatching);
+    void encAdjoint(Ciphertext& encDet, Ciphertext*& encAdj, Ciphertext encWData, Ciphertext* enccovData, long sdimBits, long nCovbatching);
     
     void encZXData(Ciphertext*& encZX, Ciphertext encXData, Ciphertext encZData, long sdimBits, long nbatching, long factorDim, long nslots);
     

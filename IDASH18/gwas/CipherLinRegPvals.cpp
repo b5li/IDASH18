@@ -356,29 +356,9 @@ void CipherPvals::aggYXData(Ciphertext*& encYX, Ciphertext encYXData, long sdimB
         Ciphertext ctemp = extscheme.leftRotateFast(res, (1 << i) * nslots1);
         scheme.addAndEqual(res, ctemp);
     }
-    fullReplicate4(encYX, res, nslots);
-}
-
-//! (34 * 8) Rot
-void CipherPvals::aggCovData(Ciphertext*& encCov, Ciphertext* enccovData,  long sdimBits, long nbatching){
-    long nslots1 = nbatching * 8;
-    NTL_EXEC_RANGE(34, first, last);
-    for (long l = first; l < last; ++l){
-        encCov[l] = enccovData[l];
-        //! Allsum
-        for(long i = 0; i < sdimBits; ++i){
-            Ciphertext ctemp = extscheme.leftRotateFast(encCov[l], (1 << i) * nslots1); // by 2^i * 16
-            scheme.addAndEqual(encCov[l], ctemp);
-        }
-    }
-    NTL_EXEC_RANGE_END;
-}
-
-//!@ Full replication of vector of size 4  (v0,v1,v2,v3) -> (v0), (v1), (v2), (v3)
-//!@ Return ciphertexts of L-1
-//!@ (2*8) Rot
-void CipherPvals::fullReplicate4(Ciphertext*& res, Ciphertext Data, long nslots){
-    //! full replication of size "4"
+    //fullReplicate4(encYX, res, nslots);
+    
+    //!@ Full replication of vector of size 4  (v0,v1,v2,v3) -> (v0), (v1), (v2), (v3), 1 level
     complex<double>** pvals = new complex<double>*[4];
     uint64_t** poly = new uint64_t*[4];
     
@@ -391,39 +371,53 @@ void CipherPvals::fullReplicate4(Ciphertext*& res, Ciphertext Data, long nslots)
         poly[i] = new uint64_t[scheme.context.L << scheme.context.logN];
         scheme.context.encode(poly[i], pvals[i], nslots, scheme.context.L);
         
-        res[i] = Data;
-        scheme.multByPolyAndEqual(res[i], poly[i]); // (1,0,0,0,|1,0,0,0|....)
-        scheme.reScaleByAndEqual(res[i], 1);
+        encYX[i] = res;
+        scheme.multByPolyAndEqual(encYX[i], poly[i]); // (1,0,0,0,|1,0,0,0|....)
+        scheme.reScaleByAndEqual(encYX[i], 1);
         
         for(long j = 0; j < 2; ++j){
-            Ciphertext ctemp = extscheme.leftRotateFast(res[i], (1 << j));
-            scheme.addAndEqual(res[i], ctemp);
+            Ciphertext ctemp = extscheme.leftRotateFast(encYX[i], (1 << j));
+            scheme.addAndEqual(encYX[i], ctemp);
         }
     }
     NTL_EXEC_RANGE_END;
 }
 
+
 //! Output: encAdj[10], lvl = L - 2
 //!         encDet = sum Data[i] * encAdj[i] , 0 <= i < 3, L - 2
-// 28 raw mult + 22 KS + 28 Rot
-void CipherPvals::encSIMDAdjoint(Ciphertext& encDet, Ciphertext*& encAdj, Ciphertext* encData){
-    Ciphertext* encDet1 = new Ciphertext[4];
 
+void CipherPvals::encAdjoint(Ciphertext& encDet, Ciphertext*& encAdj, Ciphertext* enccovData, long sdimBits, long nbatching){
+    //! 1. aggregate
+    long nslots1 = nbatching * 8;
+    Ciphertext* encCov = new Ciphertext[34];
+    NTL_EXEC_RANGE(34, first, last);
+    for (long l = first; l < last; ++l){
+        encCov[l] = enccovData[l];
+        for(long i = 0; i < sdimBits; ++i){
+            Ciphertext ctemp = extscheme.leftRotateFast(encCov[l], (1 << i) * nslots1); // by 2^i * 16
+            scheme.addAndEqual(encCov[l], ctemp);
+        }
+    }
+    NTL_EXEC_RANGE_END;
+    
+    //! 2. Compute the adj and det
     //!  4* (4 HM + 4 Rot) = 4 * (4 raw mult + 4 KS + 4 Rot)
     //!  encAdj[l] = \sum (encData[3 * l] * encData[3 * l + 1]) * encData[3 * l + 2]
     //!  encDet[l] = \sum (encData[3 * l] * encData[3 * l + 1]) * (encData[3 * l + 2] * encData[30 + l])
+    Ciphertext* encDet1 = new Ciphertext[4];
     
     NTL_EXEC_RANGE(4, first, last);
     for (long l = first; l < last; ++l){
-        encAdj[l] = extscheme.mult(encData[3 * l], encData[3 * l + 1]);
+        encAdj[l] = extscheme.mult(encCov[3 * l], encCov[3 * l + 1]);
         scheme.reScaleByAndEqual(encAdj[l], 1);
-       
-        encDet1[l] = extscheme.mult(encData[3 * l + 2], encData[30 + l]);  // required for det
+        
+        encDet1[l] = extscheme.mult(encCov[3 * l + 2], encCov[30 + l]);  // required for det
         scheme.reScaleByAndEqual(encDet1[l], 1);
         
         encDet1[l] = extscheme.mult(encDet1[l], encAdj[l]);
         
-        Ciphertext tmp = scheme.modDownTo(encData[3 * l + 2], encAdj[l].l);
+        Ciphertext tmp = scheme.modDownTo(encCov[3 * l + 2], encAdj[l].l);
         encAdj[l] = extscheme.mult(encAdj[l], tmp);
         scheme.reScaleByAndEqual(encAdj[l], 1);
         
@@ -441,7 +435,7 @@ void CipherPvals::encSIMDAdjoint(Ciphertext& encDet, Ciphertext*& encAdj, Cipher
     //! 6 * (2raw mult + 1 KS +  2Rot )
     NTL_EXEC_RANGE(6, first, last);
     for (long l = first; l < last; ++l){
-        ExtCiphertext tmp = extscheme.rawmult3(encData[3 * (l + 4)], encData[3 * (l + 4) + 1], encData[3 * (l + 4) + 2]);
+        ExtCiphertext tmp = extscheme.rawmult3(encCov[3 * (l + 4)], encCov[3 * (l + 4) + 1], encCov[3 * (l + 4) + 2]);
         extscheme.reScaleByAndEqual(tmp, 2);
         encAdj[l + 4] = extscheme.DecompKeySwitch(tmp);
         
@@ -452,13 +446,14 @@ void CipherPvals::encSIMDAdjoint(Ciphertext& encDet, Ciphertext*& encAdj, Cipher
         //scheme.reScaleByAndEqual(encAdj[l + 4], 2);
     }
     NTL_EXEC_RANGE_END;
-
+    
     encDet = encDet1[0];
     for (long l = 1; l < 4; ++l){
         scheme.addAndEqual(encDet, encDet1[l]);
     }
     scheme.reScaleByAndEqual(encDet, 1);
-
+    
+    delete[] encCov;
     delete[] encDet1;
 }
 
