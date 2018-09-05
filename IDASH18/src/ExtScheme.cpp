@@ -356,6 +356,8 @@ ExtCiphertext ExtScheme::rawmult(Ciphertext& cipher1, Ciphertext& cipher2){
     extax[0] = axbx1;
     extax[1] = axax;
 
+    delete[] axbx2;
+   
     return ExtCiphertext(extax, bxbx, context.N, cipher1.slots, cipher1.l, deg);
 }
 
@@ -423,6 +425,9 @@ ExtCiphertext ExtScheme::rawmult(ExtCiphertext& cipher1, Ciphertext& cipher2){
     extax[1] = ax2;
     extax[2] = ax3;
     
+    delete[] axbx2;
+    delete[] axax;
+    
     return ExtCiphertext(extax, bxbx, context.N, cipher1.slots, cipher1.l, deg);
 }
 
@@ -474,6 +479,11 @@ ExtCiphertext ExtScheme::rawmult3(Ciphertext& cipher1, Ciphertext& cipher2, Ciph
     extax[0] = ax1;
     extax[1] = ax2;
     extax[2] = ax3;
+    
+    delete[] ax12;
+    delete[] bx12;
+    delete[] axbx1;
+    delete[] axbx2;
     
     return ExtCiphertext(extax, bx, context.N, cipher1.slots, cipher1.l, deg);
 }
@@ -531,6 +541,11 @@ ExtCiphertext ExtScheme::rawmult3_(Ciphertext& cipher1, Ciphertext& cipher2, Cip
     extax[0] = ax1;
     extax[1] = ax2;
     extax[2] = ax3;
+    
+    delete[] ax12;
+    delete[] bx12;
+    delete[] axbx1;
+    delete[] axbx2;
     
     return ExtCiphertext(extax, bx, context.N, cipher1.slots, cipher1.l, deg);
 }
@@ -666,28 +681,18 @@ Ciphertext ExtScheme::DecompKeySwitch(ExtCiphertext& cipher) {
     if(cipher.deg > 2){
         for(long i = 0; i < cipher.l; ++i){
             Key keys = decompThreeKeyMap.at(i);
-    
-            //! Generate RNS(axi) mod p_0, q_l
             rnsDecomp(axi, cipher.ax[2], i, cipher.l);
-            
-            //! multiply by the evaluation key
             mulDecompKey(axtmp, bxtmp, axi, keys, cipher.l);
-            
-            //! aggregate
             context.addAndEqual(axmult3, axtmp, cipher.l, 1);
             context.addAndEqual(bxmult3, bxtmp, cipher.l, 1);
         }
-        
-        //! ModDown by pVec[0]
         modDownByp0(axmult3, cipher.l);
         modDownByp0(bxmult3, cipher.l);
         
-        //! aggregate
         context.addAndEqual(axres, axmult3, cipher.l);
         context.addAndEqual(bxres, bxmult3, cipher.l);
     }
 
-    
     delete[] axi;
     delete[] axmult2;
     delete[] bxmult2;
@@ -737,6 +742,12 @@ Ciphertext ExtScheme::leftRotateFast(Ciphertext& cipher, long rotSlots){
     modDownByp0(bxmult, cipher.l);
     
     context.addAndEqual(bxres, bxmult, cipher.l);
+    
+    delete[] axi;
+    delete[] axtmp;
+    delete[] bxtmp;
+    delete[] axres;
+    delete[] bxmult;
     
     return Ciphertext(axmult, bxres, context.N, cipher.slots, cipher.l);
 }
