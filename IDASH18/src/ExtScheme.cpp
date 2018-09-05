@@ -800,13 +800,105 @@ Ciphertext ExtScheme::rightRotate(Ciphertext& cipher, long rotSlots){
 /**************************************************************************************/
 //! raw multiplication + decomposition KS
 Ciphertext ExtScheme::mult(Ciphertext& cipher1, Ciphertext& cipher2){
-    ExtCiphertext extcipher = rawmult(cipher1, cipher2);
-    return DecompKeySwitch(extcipher);
+    uint64_t* axbx1 = new uint64_t[cipher1.l << context.logN]();
+    uint64_t* axbx2 = new uint64_t[cipher1.l << context.logN]();
+    
+    uint64_t* axax = new uint64_t[cipher1.l << context.logN]();
+    uint64_t* bxbx = new uint64_t[cipher1.l << context.logN]();
+    
+    //! return: (bxbx, (axbx1, axax)), (1, s, s2)
+    context.mul(bxbx, cipher1.bx, cipher2.bx, cipher1.l);   //! b1 * b2
+    context.mul(axax, cipher1.ax, cipher2.ax, cipher1.l);   //! a1 * a2
+    
+    context.add(axbx1, cipher1.ax, cipher1.bx, cipher1.l);  //! (a1 + b1)
+    context.add(axbx2, cipher2.ax, cipher2.bx, cipher2.l);  //! (a2 + b2)
+    context.mulAndEqual(axbx1, axbx2, cipher1.l);           //! (a1 + b1)*(a2 + b2)
+    
+    context.subAndEqual(axbx1, bxbx, cipher1.l);
+    context.subAndEqual(axbx1, axax, cipher1.l);
+    
+    uint64_t* axi = new uint64_t[(cipher1.l + 1) << context.logN];
+    uint64_t* axtmp = new uint64_t[(cipher1.l + 1) << context.logN];
+    uint64_t* bxtmp = new uint64_t[(cipher1.l + 1) << context.logN];
+    uint64_t* axmult2 = new uint64_t[(cipher1.l + 1) << context.logN]();
+    uint64_t* bxmult2 = new uint64_t[(cipher1.l + 1) << context.logN]();
+    
+    //! Key switching of axax (s^2 -> s)
+    for(long i = 0; i < cipher1.l; ++i){
+        Key keys = decompTwoKeyMap.at(i);
+        rnsDecomp(axi, axax, i, cipher1.l);
+        mulDecompKey(axtmp, bxtmp, axi, keys, cipher1.l);
+        
+        context.addAndEqual(axmult2, axtmp, cipher1.l, 1);
+        context.addAndEqual(bxmult2, bxtmp, cipher1.l, 1);
+    }
+    
+    modDownByp0(axmult2, cipher1.l);
+    modDownByp0(bxmult2, cipher1.l);
+    
+    context.addAndEqual(axbx1, axmult2, cipher1.l);
+    context.addAndEqual(bxbx, bxmult2, cipher1.l);
+    
+    delete[] axi;
+    delete[] axbx2;
+    delete[] axmult2;
+    delete[] bxmult2;
+    delete[] axtmp;
+    delete[] bxtmp;
+    
+    return Ciphertext(axbx1, bxbx, context.N, cipher1.slots, cipher1.l);
 }
 
 void ExtScheme::multAndEqual(Ciphertext& cipher1, Ciphertext& cipher2){
-    ExtCiphertext extcipher = rawmult(cipher1, cipher2);
-    cipher1 = DecompKeySwitch(extcipher);
+    uint64_t* axbx1 = new uint64_t[cipher1.l << context.logN]();
+    uint64_t* axbx2 = new uint64_t[cipher1.l << context.logN]();
+    
+    //uint64_t* axax = new uint64_t[cipher1.l << context.logN]();
+    //uint64_t* bxbx = new uint64_t[cipher1.l << context.logN]();
+    
+    //! return: (cipher1.bx, (axbx1, cipher1.ax)), (1, s, s2)
+    context.add(axbx1, cipher1.ax, cipher1.bx, cipher1.l);  //! (a1 + b1)
+    context.add(axbx2, cipher2.ax, cipher2.bx, cipher2.l);  //! (a2 + b2)
+    context.mulAndEqual(axbx1, axbx2, cipher1.l);           //! (a1 + b1)*(a2 + b2)
+    
+    context.mulAndEqual(cipher1.bx, cipher2.bx, cipher1.l);   //! b1 * b2
+    context.mulAndEqual(cipher1.ax, cipher2.ax, cipher1.l);   //! a1 * a2
+    
+    context.subAndEqual(axbx1, cipher1.bx, cipher1.l);
+    context.subAndEqual(axbx1, cipher1.ax, cipher1.l);
+    
+    
+    uint64_t* axi = new uint64_t[(cipher1.l + 1) << context.logN];
+    uint64_t* axtmp = new uint64_t[(cipher1.l + 1) << context.logN];
+    uint64_t* bxtmp = new uint64_t[(cipher1.l + 1) << context.logN];
+    uint64_t* axmult2 = new uint64_t[(cipher1.l + 1) << context.logN]();
+    uint64_t* bxmult2 = new uint64_t[(cipher1.l + 1) << context.logN]();
+    
+    //! Key switching of cipher1.ax (s^2 -> s)
+    for(long i = 0; i < cipher1.l; ++i){
+        Key keys = decompTwoKeyMap.at(i);
+        rnsDecomp(axi, cipher1.ax, i, cipher1.l);
+        mulDecompKey(axtmp, bxtmp, axi, keys, cipher1.l);
+        
+        context.addAndEqual(axmult2, axtmp, cipher1.l, 1);
+        context.addAndEqual(bxmult2, bxtmp, cipher1.l, 1);
+    }
+    modDownByp0(axmult2, cipher1.l);
+    modDownByp0(bxmult2, cipher1.l);
+    
+    context.add(cipher1.ax, axbx1, axmult2, cipher1.l);
+    context.addAndEqual(cipher1.bx, bxmult2, cipher1.l);
+    
+    delete[] axi;
+    delete[] axbx1;
+    delete[] axbx2;
+    delete[] axmult2;
+    delete[] bxmult2;
+    delete[] axtmp;
+    delete[] bxtmp;
+    
+    //ExtCiphertext extcipher = rawmult(cipher1, cipher2);
+    //cipher1 = DecompKeySwitch(extcipher);
 }
 
 Ciphertext ExtScheme::square(Ciphertext& cipher){
