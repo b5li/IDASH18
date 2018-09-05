@@ -164,6 +164,14 @@ void ExtScheme::addDecompRightRotKeys(SecretKey& secretKey){
     }
 }
 
+//!@ Generate the right rotation key by "rot" positions
+void ExtScheme::addDecompRightRotKey(SecretKey& secretKey, long rot){
+    long idx = context.Nh - rot;
+    if(decompLeftRotKeyMap.find(make_pair(idx,0)) == decompLeftRotKeyMap.end()) {
+        addDecompLeftRotKey(secretKey, idx);
+    }
+    //cout << "rot:" << rot << "," << "idx: " << idx << endl; 
+}
 
 /**************************************************************************************/
 //!@ convert to cipher to extended

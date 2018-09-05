@@ -55,6 +55,8 @@ public:
     
     void addDecompLeftRotKey(SecretKey& secretKey, long rot);
     void addDecompLeftRotKeys(SecretKey& secretKey); ///< contain all the decomposition keys of rotations, if generated
+    
+    void addDecompRightRotKey(SecretKey& secretKey, long rot);
     void addDecompRightRotKeys(SecretKey& secretKey);
     /********************************************************************/
     //! conversion to a normal ciphertext (b, a)
