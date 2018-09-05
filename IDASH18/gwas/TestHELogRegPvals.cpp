@@ -47,7 +47,7 @@
 void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData, double** xData, double** sData, long factorDim, long sampleDim, long nsnp, string filename){
     
     struct rusage usage;
-    long memoryscale = (1 << 30);
+    long memoryscale = (1 << 20);
     
     //! Parameters for GWAS
     long YXscaleBits = 2;
