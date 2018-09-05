@@ -11,6 +11,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <sys/resource.h>   //! check the memory usage
 
 #define USE_NTL 1
 #ifdef USE_NTL
@@ -41,6 +42,9 @@
 //!@ Function: using decomposition KS -> logN = 13
 
 void TestHEPvals::testFastHELinReg(double*& zScore, double*& pVals, double* yData, double** xData, double** sData, long factorDim, long sampleDim, long nsnp,  string filename){
+    
+    struct rusage usage;
+    long memoryscale = (1 << 20);
     
     //! Parameters for approx-HE
     long logp = 43;                    //! all the msg are scaled by "p", logq0 - logp = (final bits of precision)
@@ -98,6 +102,8 @@ void TestHEPvals::testFastHELinReg(double*& zScore, double*& pVals, double* yDat
     auto diff = end - start;
     double timeElapsed = chrono::duration <double, milli> (diff).count()/1000.0;
     cout << "Scheme generation time= " << timeElapsed << " s" << endl;
+    int ret = getrusage(RUSAGE_SELF, &usage);
+    cout<< "Memory Usage : " << (double) usage.ru_maxrss/(memoryscale)  << "(GB)" << endl;
     
     CipherPvals cipherPvals(scheme, secretKey, extscheme);
     
@@ -132,6 +138,8 @@ void TestHEPvals::testFastHELinReg(double*& zScore, double*& pVals, double* yDat
     diff = end - start;
     timeElapsed = chrono::duration <double, milli> (diff).count()/1000.0;
     cout << "Encryption time (X and snp) = " << timeElapsed << " s" << endl;
+    ret = getrusage(RUSAGE_SELF, &usage);
+    cout<< "Memory Usage : " << (double) usage.ru_maxrss/(memoryscale)  << "(GB)" << endl;
     
     cout << "+------------------------------------+" << endl;
     cout << "|             Evaluation             |" << endl;
@@ -284,7 +292,8 @@ void TestHEPvals::testFastHELinReg(double*& zScore, double*& pVals, double* yDat
     //cout << "logq: " << encYSnorm[0].l  << "," << encSnorm[0].l << endl;   // L - 3
     totalEvaltime += timeElapsed;
     cout << "Total Evaluation Timing = " << totalEvaltime << " s" << endl;
-    
+    ret = getrusage(RUSAGE_SELF, &usage);
+    cout<< "Memory Usage : " << (double) usage.ru_maxrss/(memoryscale)  << "(GB)" << endl;
     
     cout << "+------------------------------------+" << endl;
     cout << "|             Decryption             |" << endl;
