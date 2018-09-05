@@ -1,0 +1,105 @@
+g++ -std=c++11 -O2 -I/usr/local/include -pthread mainLinReg.cpp libHEGWAS.a -o foo -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
+/usr/bin/time ./foo "idashdata/covariates.txt" "idashdata/snpMat.txt"
+
++------------------------------------+
+|    0. Read the covariates & SNP    |
++------------------------------------+
+(sampleDim, factorDim, nsnp): (245,4,10643)
+(logN,logp,L,K,logQ,h) = (13,43,4,1,245,130)
+(dim,nslots,nencsnp) = (4,4096,3)
++------------------------------------+
+|           Key Generation           |
++------------------------------------+
+Scheme generation time= 0.443467 s
+Memory Usage : 0.200005(GB)
++------------------------------------+
+|             Encryption             |
++------------------------------------+
+Encryption time (X and snp) = 20.9188 s
+Memory Usage : 2.47372(GB)
++------------------------------------+
+|             Evaluation             |
++------------------------------------+
+1. Aggregation = 3.32549 s
+2. (X^T * X)^-1 = 0.421278 s
+1/(s^3) * Adj: [0.425305, -0.31883, -0.190374, -0.441573, 0.824093, -0.00201179, 0.0261189, 1.44037, -0.763, 1.50702, ] 
+1/(s^3) * det: 4.6759 ?= 4.67581
+3. Norm = 0.467755 s
+Total Evaluation Timing = 4.21453 s
+Memory Usage : 3.26965(GB)
++------------------------------------+
+|             Decryption             |
++------------------------------------+
+Decryption time = 0.00383011 s
++------------------------------------+
+|            Quality Check           |
++------------------------------------+
+Error (TP, FP, FN, TN) of pt/ct : 1,0.00588941,0,0.994111
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+g++ -std=c++11 -O2 -I/usr/local/include -pthread mainLogReg.cpp libHEGWAS.a -o foo -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
+/usr/bin/time ./foo "idashdata/covariates.txt" "idashdata/snpMat.txt" 
+
++------------------------------------+
+|    1. Read the covariates & SNP    |
++------------------------------------+
+(sampleDim, factorDim, nsnp): (245,4,10643)
+(logN,logp,L,K,logQ,h) = (15,43,24,1,1103,256)
+(dim,nslots,nbatching,nencsnp,subblock) = (4,16384,16,1,16)
++------------------------------------+
+|           Key Generation           |
++------------------------------------+
+Scheme generation time= 55.9309 s
+Memory Usage : 5.62055(GB)
++------------------------------------+
+|             Encryption             |
++------------------------------------+
+Encryption time (X and snp) = 26.603 s
+Memory Usage : 8.63425(GB)
++------------------------------------+
+|             Evaluation             |
++------------------------------------+
+1. Logistic regression = 90.5155 s
+Memory Usage : 9.13587(GB)
+2. Update the weights = 15.0747 s
+Memory Usage : 9.23119(GB)
+Memory Usage (1) : 9.94342(GB)
+Memory Usage (2) : 10.0492(GB)
+3.1. (X^T * W *  X)^-1 = 20.9114 s
+Memory Usage : 10.0774(GB)
+3.2. Z^T * X   = 1.6594 s
+3.3. S^T * X  = 0.43325 s
+Memory Usage : 10.1085(GB)
+3.4.0. genpoly = 0.323266 s
+3.4. Enc(Z^T * W * S) = 26.5849 s
+Memory Usage : 12.0595(GB)
+3.5.  Enc(S^T * W * S)   = 26.6758 s
+Memory Usage : 14.0707(GB)
+3.6. Enc(X^T * W2 * S)  = 31.7035 s
+Memory Usage : 15.0056(GB)
+---------------
+Z^T * W ^ S : [-0.486036,-0.486253,-0.486585,-0.456848,-7.11445,-4.22927,-16.7035,-0.971366,-0.485829,-0.395233,]
+---------------
+Z^T * W ^ S : [0.249556,0.24957,0.249591,0.748586,6.73737,4.74115,13.7236,0.499066,0.249543,1.74642,]
+---------------
+S^T * W ^ S : [0.249556,0.24957,0.249591,0.748586,6.73737,4.74115,13.7236,0.499066,0.249543,1.74642,]
+---------------
+X^T * W2 ^ S : [0.0622783,0.0622851,0.0622955,0.186794,1.68119,1.18308,3.4243,0.124533,0.0622715,0.435712,]
+---------------
+4. Norm = 0.866106 s
+logq: 1,1
+Total Evaluation Timing = 214.748 s
+Memory Usage : 15.0056(GB)
++------------------------------------+
+|             Decryption             |
++------------------------------------+
+Decryption time = 0.024987 s
++------------------------------------+
+|          2. Quality Check          |
++------------------------------------+
+Error (TP, FP, FN, TN) of pt/ct : 1,0.00523846,0,0.994762
+652.14user 25.75system 4:59.83elapsed 226%CPU (0avgtext+0avgdata 15734540maxresident)k
+370728inputs+1088outputs (4904major+3447978minor)pagefaults 0swaps
+
