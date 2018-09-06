@@ -65,7 +65,7 @@ void DataFromFile(vector<string>& tag, vector<vector<string>>& sline, string pat
             sampleDim++;
         }
     } else {
-        cout << "Error: cannot read file" << endl;
+      cout << Error << " cannot read file " << path << endl;
     }
 }
 
@@ -83,7 +83,7 @@ void SimpleDataFromFile(double*& Data, string path) {
             nrows++;
         }
     } else {
-        cout << "Error: cannot read file" << endl;
+      cout << Error << " cannot read file " << path << endl;
     }
     
     
@@ -195,7 +195,7 @@ void ListsData(double**& sData, long& nsnp, long& sampleDim, vector<vector<strin
                 sData[i][j] =  atof(snpfile[i][j].c_str());
             }
             else{
-                cout << "Error: cannot read the snp" << endl;
+	      cout << Error << " cannot read the snp " << endl;
             }
         }
     }

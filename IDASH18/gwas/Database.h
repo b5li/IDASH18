@@ -45,5 +45,6 @@ void printRvectorToFile1(vec_RR& vec, string filename, const long k = 0);
 
 void printRmatrixToFile(Mat<RR>& mat, string filename, const long k = 0);
 
+#define Error "\033[5;31mError:\033[0m"
 
 #endif /* TESTDATABASE_H_ */
