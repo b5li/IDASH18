@@ -28,8 +28,26 @@ void mulMod(uint64_t &r, uint64_t a, uint64_t b, uint64_t m) {
 }
 
 void mulModBarrett(uint64_t& r, uint64_t a, uint64_t b, uint64_t p, uint64_t pr, long twok) {
+#if 0
 	unsigned __int128 mul = static_cast<unsigned __int128>(a % p) * (b % p);
 	modBarrett(r, mul, p, pr, twok);
+#endif
+#if 1
+    unsigned __int128 mul = static_cast<unsigned __int128>(a) * b;
+    uint64_t atop, abot;
+    abot = static_cast<uint64_t>(mul);
+    atop = static_cast<uint64_t>(mul >> 64);
+    unsigned __int128 tmp = static_cast<unsigned __int128>(abot) * pr;
+    tmp >>= 64;
+    tmp += static_cast<unsigned __int128>(atop) * pr;
+    tmp >>= twok - 64;
+    tmp *= p;
+    tmp = mul - tmp;
+    r = static_cast<uint64_t>(tmp);
+    if(r >= p) {
+        r -= p;
+    }
+#endif
 }
 
 void modBarrett(uint64_t &r, uint64_t a, uint64_t m, uint64_t mr, long twok) {
