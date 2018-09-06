@@ -41,8 +41,6 @@
 #include "CipherLogRegPvals.h"
 #include "TestHELogRegPvals.h"
 
-#define ver1 1
-#define ver2 0
 
 void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData, double** xData, double** sData, long factorDim, long sampleDim, long nsnp, string filename){
     
@@ -63,7 +61,7 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     long nslots = (1 << (logN-1));     //! total number of plaintext slots
     long L = 23;                       //! 9 (LogReg) + 4 (Pr) + 1 (W) + 5 (Z, two-inverse) + 2 (Z^T * X) + 1 (multiplied by adj * XW2S)= 22
     long K = 1;
-    long h = 170;                       //! Hamming weight of sk (logq = 1060)
+    long h = 170;                       //! Hamming weight of sk (logq = 1103)
     
     //! encryption level for snp data
     long Slvl = 3;
@@ -74,8 +72,8 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     long YXlvl = L;
     long Xlvl = L - 9;      //! encBeta.lvl = 1 + (2 + log2(deg(sigmoid))) * (iter)
     long Ylvl = L - 13;     //! encPr.lvl
-    long Covlvl = 6;
-
+    long Covlvl = 6;        //! one level: mult by W, two levels: adj -> 3
+ 
     //! Parameters
     long sampleDim2 = (1 << (long)ceil(log2(sampleDim)));   //! closet PoT
     long sdimBits = (long)ceil(log2(sampleDim));            //! log2(sampleDim)
@@ -127,7 +125,7 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     auto end = std::chrono::steady_clock::now();
     auto diff = end - start;
     double timeElapsed = chrono::duration <double, milli> (diff).count()/1000.0;
-    cout << "Scheme generation time= " << timeElapsed << " s" << endl;
+    cout << "Scheme generation time = " << timeElapsed << " s" << endl;
     int ret = getrusage(RUSAGE_SELF, &usage);
     cout<< "Memory Usage : " << (double) usage.ru_maxrss/(memoryscale)  << "(GB)" << endl;
     
@@ -190,7 +188,12 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     totalEvaltime = timeElapsed;
     ret = getrusage(RUSAGE_SELF, &usage);
     cout<< "Memory Usage : " << (double) usage.ru_maxrss/(memoryscale)  << "(GB)" << endl;
-
+    
+    double* cwData = new double[factorDim];
+    cipherPvals.decVector(cwData, encBeta, factorDim);
+    cout << "[" << cwData[0] << "," << cwData[1] << "," <<  cwData[2] << "," << cwData[3] << "]" << endl;
+    cout << "------------------------" << endl;
+    
     // "+------------------------------------+"
     //! 2. Update the weights
     // "+------------------------------------+"
@@ -211,7 +214,7 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     totalEvaltime += timeElapsed;
     ret = getrusage(RUSAGE_SELF, &usage);
     cout<< "Memory Usage : " << (double) usage.ru_maxrss/(memoryscale)  << "(GB)" << endl;
-    
+    cout << "------------------------" << endl;
     delete[] poly;
  #if 1
     // "+------------------------------------+"
@@ -222,9 +225,9 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     
     Ciphertext* encAdj = new Ciphertext[10];    //! (L - 21) or (L - 20) = 3
     Ciphertext encDet;
-    
     Ciphertext encWData1 = scheme.modDownBy(encWData, 3);
     cipherLRPvals.encAdjoint(encDet, encAdj, encWData1, enccovData, sdimBits, nCovbatching); //! (X^T * W * X)
+ 
     
     end = std::chrono::steady_clock::now();
     diff = end - start;
@@ -233,10 +236,11 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     totalEvaltime += timeElapsed;
     ret = getrusage(RUSAGE_SELF, &usage);
     cout<< "Memory Usage : " << (double) usage.ru_maxrss/(memoryscale)  << "(GB)" << endl;
-    
+    cout << "------------------------" << endl;
     delete[] enccovData;
     
-#if defined(__DEBUG_)
+#if 1 //defined(__DEBUG_)
+    cout << encAdj[0].l << endl;
     double dtemp;
     cout << "1/(s^3) * Adj: [" ;
     for(long l = 0; l < nterms; ++l){
@@ -250,7 +254,7 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
 #endif
 
     // "+------------------------------------+"
-    //! 3.2. encZXData[4], L - 21,
+    //! 3.2. encZXData[4], lvl = 3
     // "+------------------------------------+"
     
     start= chrono::steady_clock::now();
@@ -258,12 +262,14 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     Ciphertext* encZX = new Ciphertext[factorDim];
     cipherLRPvals.encZXData(encZX, encXData, encZData, sdimBits, nXbatching, factorDim, nslots); // [-43.8965903, -7.693702862, -7.157768273, -18.84315905]
     
+    
     end = std::chrono::steady_clock::now();
     diff = end - start;
     timeElapsed = chrono::duration <double, milli> (diff).count()/1000.0;
     cout << "3.2. Z^T * X   = " << timeElapsed << " s" << endl;
     totalEvaltime += timeElapsed;
-
+    cout << "------------------------" << endl;
+    
     // "+------------------------------------+"
     //! 3.3. encSX[4][nencsnp] = enc(S^T * X),
     // "+------------------------------------+"
@@ -280,6 +286,7 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     totalEvaltime += timeElapsed;
     ret = getrusage(RUSAGE_SELF, &usage);
     cout<< "Memory Usage : " << (double) usage.ru_maxrss/(memoryscale)  << "(GB)" << endl;
+    cout << "------------------------" << endl;
     
     // "+------------------------------------+"
     //! 3.4.0 encZWSData[nencsnp]
@@ -309,16 +316,17 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     timeElapsed = chrono::duration <double, milli> (diff).count()/1000.0;
     cout << "3.4.0. genpoly = " << timeElapsed << " s" << endl;
     totalEvaltime += timeElapsed;
+    cout << "------------------------" << endl;
     
     // "+------------------------------------+"
-    //! 3.4. encZWSData[nencsnp], L - 21
+    //! 3.4. encZWSData[nencsnp], 2
     // "+------------------------------------+"
    
     start = chrono::steady_clock::now();
     
     Ciphertext* encZWS = new Ciphertext[nencsnp];
     cipherLRPvals.encVecSData(encZWS, encZWData, encSData, poly0, poly1, sampleDim, nencsnp, nslots, subblocksize, niter, nstep, nblock[0], rot);
-    
+
     end = std::chrono::steady_clock::now();
     diff = end - start;
     timeElapsed = chrono::duration <double, milli> (diff).count()/1000.0;
@@ -326,14 +334,14 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     totalEvaltime += timeElapsed;
     ret = getrusage(RUSAGE_SELF, &usage);
     cout<< "Memory Usage : " << (double) usage.ru_maxrss/(memoryscale)  << "(GB)" << endl;
-    
+    cout << "------------------------" << endl;
     // "+------------------------------------+"
-    //! 3.5. encZWSData[nencsnp], L - 21
+    //! 3.5. encZWSData[nencsnp], 2
     // "+------------------------------------+"
     start = chrono::steady_clock::now();
     
     Ciphertext* encSWS = new Ciphertext[nencsnp];
-    encWData1 = scheme.modDownBy(encWData, 1); //! (L - 14) -> (L - 15)
+    encWData1 = scheme.modDownBy(encWData, 1); //! (L - 14) -> (L - 16)
     cipherLRPvals.encVecSData(encSWS, encWData1, encSData, poly0, poly1, sampleDim, nencsnp, nslots, subblocksize, niter, nstep, nblock[0], rot);
 
     end = std::chrono::steady_clock::now();
@@ -343,9 +351,10 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     totalEvaltime += timeElapsed;
     ret = getrusage(RUSAGE_SELF, &usage);
     cout<< "Memory Usage : " << (double) usage.ru_maxrss/(memoryscale)  << "(GB)" << endl;
+    cout << "------------------------" << endl;
     
     // "+------------------------------------+"
-    //! 3.6. encW2SX[nencsnp][4], L - 21
+    //! 3.6. encW2SX[nencsnp][4], 2
     // "+------------------------------------+"
     
     start= chrono::steady_clock::now();
@@ -360,12 +369,13 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     totalEvaltime += timeElapsed;
     ret = getrusage(RUSAGE_SELF, &usage);
     cout<< "Memory Usage : " << (double) usage.ru_maxrss/(memoryscale)  << "(GB)" << endl;
+    cout << "------------------------" << endl;
     
     delete[] nblock;
     delete[] rot;
     
 #if 1 // defined(__DEBUG_)
-    //cout << L - encZWS[0].l << "," << L - encSWS[0].l << "," << L - encW2SX[0][0].l << endl;
+    cout << encZWS[0].l << "," << encSWS[0].l << "," << encW2SX[0][0].l << endl;
     
     cout << "---------------" << endl;
     double* res = new double[nslots];
@@ -414,20 +424,21 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
             encSX1[k] = encSX[k][j];
         }
         
-        //! encZWS: (L - 21) -> encZSnorm: (L - 22)
+        //! encZWS: 2 -> encZSnorm: 1
         encZSnorm[j] = scheme.modDownTo(encDet, encZWS[j].l);
         extscheme.multAndEqual(encZSnorm[j], encZWS[j]);
         scheme.reScaleByAndEqual(encZSnorm[j], 1);
         
-        //! encSWS: (L - 20) -> encZSnorm: (L - 21)
+        //! encSWS: 2 -> encZSnorm: 1
         encSnorm[j] = scheme.modDownTo(encDet, encSWS[j].l);
         extscheme.multAndEqual(encSnorm[j], encSWS[j]);
         scheme.reScaleByAndEqual(encSnorm[j], 1);
         
-        Ciphertext res0; //! L - 22 = 1
-        Ciphertext res1; //! L - 22 = 1
+        Ciphertext res0; //! 1
+        Ciphertext res1; //! 1
 
         cipherLRPvals.extQuadForm(res0, res1, encZX, encSX1, encAdj, encW2SX[j], factorDim);
+        //cout << j << ": " << encZSnorm[j].l << "," << encSnorm[j].l << "," << res0.l << "," << res1.l << endl;
         
         scheme.modDownToAndEqual(encZSnorm[j], res0.l);
         scheme.subAndEqual(encZSnorm[j], res0);
@@ -518,6 +529,8 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
     delete[] Snorm1;
 #endif
 }
+
+
 
 //****************************************************************************************/
 //!@ sdeg: degree of approximation polynomial of sigmoid (for testing)
@@ -908,20 +921,20 @@ void TestHELRPvals::testHELogReg_accuracy(double*& zScore, double*& pVals, doubl
     cout << "---------------" << endl;
     double* res = new double[nslots];
     cipherPvals.decVector(res, encZWS[0], nslots);
-    cout << "Z^T * W ^ S : [" ;
+    cout << "Z^T * W * S : [" ;
     for(long l = 0; l < 10; ++l){
         cout << res[l] << ",";
     }
     cout << "]" << endl;
     cout << "---------------" << endl;
     cipherPvals.decVector(res, encSWS[0], nslots);
-    cout << "S^T * W ^ S : [" ;
+    cout << "S^T * W * S : [" ;
     for(long l = 0; l < 10; ++l){
         cout << res[l] << ",";
     }
     cout << "]" << endl;
     cout << "---------------" << endl;
-    cout << "X^T * W2 ^ S : [" ;
+    cout << "X^T * W2 * S : [" ;
     cipherPvals.decVector(res, encW2SX[0][0], nslots);
     for(long l = 0; l < 10; ++l){
         cout << res[l] << ",";
@@ -936,7 +949,7 @@ void TestHELRPvals::testHELogReg_accuracy(double*& zScore, double*& pVals, doubl
     //! ZSnorm = <zstar, sstar> = (encDet * encZWS) - (encZX) * encAdj * (encXW2S)
     //! Snorm = (encDet * encSWS) - (encSX) * encAdj * (encXW2S)
     
-    start= chrono::steady_clock::now();
+    start = chrono::steady_clock::now();
     
     Ciphertext* encZSnorm = new Ciphertext[nencsnp];
     Ciphertext* encSnorm = new Ciphertext[nencsnp];
