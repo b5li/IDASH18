@@ -1,6 +1,7 @@
 g++ -std=c++11 -O2 -I/usr/local/include -pthread mainLinReg.cpp libHEGWAS.a -o foo -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
 /usr/bin/time ./foo "idashdata/covariates.txt" "idashdata/snpMat.txt"
 
+
 +------------------------------------+
 |    0. Read the covariates & SNP    |
 +------------------------------------+
@@ -10,27 +11,22 @@ g++ -std=c++11 -O2 -I/usr/local/include -pthread mainLinReg.cpp libHEGWAS.a -o f
 +------------------------------------+
 |           Key Generation           |
 +------------------------------------+
-Scheme generation time= 0.443467 s
-Memory Usage : 0.200005(GB)
+Scheme generation time= 0.393602 s
+Memory Usage : 0.200001(GB)
 +------------------------------------+
 |             Encryption             |
 +------------------------------------+
-Encryption time (X and snp) = 20.9188 s
-Memory Usage : 2.47372(GB)
+Encryption time (X and snp) = 20.8672 s
+Memory Usage : 2.47371(GB)
 +------------------------------------+
 |             Evaluation             |
 +------------------------------------+
-1. Aggregation = 3.32549 s
-2. (X^T * X)^-1 = 0.421278 s
-1/(s^3) * Adj: [0.425305, -0.31883, -0.190374, -0.441573, 0.824093, -0.00201179, 0.0261189, 1.44037, -0.763, 1.50702, ] 
-1/(s^3) * det: 4.6759 ?= 4.67581
-3. Norm = 0.467755 s
-Total Evaluation Timing = 4.21453 s
-Memory Usage : 3.26965(GB)
+Total Evaluation Timing = 3.45296 s
+Memory Usage : 2.74017(GB)
 +------------------------------------+
 |             Decryption             |
 +------------------------------------+
-Decryption time = 0.00383011 s
+Decryption time = 0.0033744 s
 +------------------------------------+
 |            Quality Check           |
 +------------------------------------+
