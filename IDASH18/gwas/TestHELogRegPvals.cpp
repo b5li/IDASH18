@@ -118,9 +118,12 @@ void TestHELRPvals::testHELogReg(double*& zScore, double*& pVals, double* yData,
 
     //! evk for rotation (generate all the left rotation keys/ right keys for 1 and 2)
     extscheme.addDecompLeftRotKeys(secretKey);
-    for(long i = 0; i < fdimBits; ++i){
+    
+    NTL_EXEC_RANGE(fdimBits, first, last);
+    for (long i = first; i < last; ++i) {
         extscheme.addDecompRightRotKey(secretKey, 1 << i); //! 1, 2
     }
+    NTL_EXEC_RANGE_END;
     
     auto end = std::chrono::steady_clock::now();
     auto diff = end - start;
