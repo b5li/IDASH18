@@ -38,7 +38,7 @@ Error (TP, FP, FN, TN) of pt/ct : 1,0.00588941,0,0.994111
 g++ -std=c++11 -O2 -I/usr/local/include -pthread mainLogReg.cpp libHEGWAS.a -o foo -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
 /usr/bin/time ./foo "idashdata/covariates.txt" "idashdata/snpMat.txt" 
 
- +------------------------------------+
++------------------------------------+
 |    1. Read the covariates & SNP    |
 +------------------------------------+
 (sampleDim, factorDim, nsnp): (245,4,10643)
@@ -47,65 +47,67 @@ g++ -std=c++11 -O2 -I/usr/local/include -pthread mainLogReg.cpp libHEGWAS.a -o f
 +------------------------------------+
 |           Key Generation           |
 +------------------------------------+
-Scheme generation time = 46.6366 s
-Memory Usage : 5.19108(GB)
+Scheme generation time = 41.3562 s
+Memory Usage : 5.22459(GB)
 +------------------------------------+
 |             Encryption             |
 +------------------------------------+
-Encryption time (X and snp) = 26.0755 s
-Memory Usage : 8.203(GB)
+Encryption time (X and snp) = 26.0262 s
+Memory Usage : 8.20197(GB)
 +------------------------------------+
 |             Evaluation             |
 +------------------------------------+
-1. Logistic regression = 67.3867 s
-Memory Usage : 8.67994(GB)
-[0.106453,0.0219845,0.0211884,0.0467032]
+1. Logistic regression = 38.5701 s
+Memory Usage : 8.9541(GB)
+[0.106453,0.0219846,0.0211884,0.0467032]
 ------------------------
-2. Update the weights = 9.90826 s
-Memory Usage : 8.73869(GB)
+2. Update the weights = 6.21478 s
+Memory Usage : 9.07631(GB)
 ------------------------
-3.1. (X^T * W *  X)^-1 = 17.4511 s
-Memory Usage : 9.52205(GB)
+3.1. (X^T * W *  X)^-1 = 16.9575 s
+Memory Usage : 9.87912(GB)
 ------------------------
 3
-1/(s^3) * Adj: [0.422819, -0.316995, -0.189263, -0.439001, 0.819314, -0.00200635, 0.0260262, 1.43201, -0.758553, 1.49826, ] 
-1/(s^3) * det: 1.16008 ?= 1.16016
-3.2. Z^T * X   = 1.39938 s
+1/(s^3) * Adj: [0.422822, -0.316993, -0.189264, -0.439003, 0.819319, -0.0019991, 0.0260231, 1.43201, -0.758556, 1.49826, ] 
+1/(s^3) * det: 1.16008 ?= 1.16025
+3.2. Z^T * X   = 1.32996 s
 ------------------------
-3.3. S^T * X  = 0.435946 s
-Memory Usage : 9.53463(GB)
+3.3. S^T * X  = 0.451338 s
+Memory Usage : 9.89347(GB)
 ------------------------
-3.4.0. genpoly = 0.315038 s
+3.4.0. genpoly = 0.309997 s
 ------------------------
-3.4. Enc(Z^T * W * S) = 22.3368 s
-Memory Usage : 11.3434(GB)
+3.4. Enc(Z^T * W * S) = 22.0683 s
+Memory Usage : 11.7093(GB)
 ------------------------
-3.5.  Enc(S^T * W * S)   = 22.4488 s
-Memory Usage : 13.173(GB)
+3.5.  Enc(S^T * W * S)   = 22.0531 s
+Memory Usage : 13.5508(GB)
 ------------------------
-3.6. Enc(X^T * W2 * S)  = 24.7818 s
-Memory Usage : 14.9754(GB)
+3.6. Enc(X^T * W2 * S)  = 25.2202 s
+Memory Usage : 15.0061(GB)
 ------------------------
 2,2,2
 ---------------
 Z^T * W ^ S : [-0.486036,-0.486253,-0.486585,-0.456848,-7.11445,-4.22926,-16.7035,-0.971366,-0.485829,-0.395232,]
 ---------------
+Z^T * W ^ S : [0.249557,0.24957,0.249591,0.748587,6.73738,4.74116,13.7236,0.499067,0.249543,1.74642,]
+---------------
 S^T * W ^ S : [0.249557,0.24957,0.249591,0.748587,6.73738,4.74116,13.7236,0.499067,0.249543,1.74642,]
 ---------------
 X^T * W2 ^ S : [0.0622784,0.0622852,0.0622956,0.186794,1.68119,1.18308,3.4243,0.124534,0.0622716,0.435712,]
 ---------------
-4. Norm = 0.744688 s
+4. Norm = 0.664455 s
 logq: 1,1
-Total Evaluation Timing = 167.208 s
-Memory Usage : 14.9754(GB)
+Total Evaluation Timing = 133.84 s
+Memory Usage : 15.0061(GB)
 +------------------------------------+
 |             Decryption             |
 +------------------------------------+
-Decryption time = 0.0209503 s
+Decryption time = 0.0212785 s
 +------------------------------------+
 |          2. Quality Check          |
 +------------------------------------+
 Error (TP, FP, FN, TN) of pt/ct : 1,0.00415164,0,0.995848
-541.98user 25.55system 4:01.66elapsed 234%CPU (0avgtext+0avgdata 15702872maxresident)k
-37904inputs+752outputs (185major+3089753minor)pagefaults 0swaps
+569.95user 71.08system 3:23.77elapsed 314%CPU (0avgtext+0avgdata 15735016maxresident)k
+393376inputs+760outputs (4867major+3183566minor)pagefaults 0swaps
 
