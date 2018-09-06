@@ -182,25 +182,29 @@ void ExtTestScheme::testThreeProd(long logN,  long L, long logp, long logSlots){
     
     scheme.reScaleByAndEqual(multCipher2, 2);
     
-    timeutils.start("Homomorphic Square");
+    timeutils.start("Homomorphic Square & KS");
     ExtCiphertext extsqrCiphext = extscheme.rawsquare(cipher1);
-    timeutils.stop("Homomorphic Square");
-    
     Ciphertext sqrCipher = extscheme.DecompKeySwitch(extsqrCiphext);
+    timeutils.stop("Homomorphic Square & KS");
+    
     scheme.reScaleByAndEqual(sqrCipher, 1);
     
-    
-    
+    timeutils.start("Homomorphic Square multi-threading");
+    Ciphertext sqrCipher1 = extscheme.squareMT(cipher1);
+    timeutils.stop("Homomorphic Square");
+    scheme.reScaleByAndEqual(sqrCipher1, 1);
     
     complex<double>* dvecMult1 = scheme.decrypt(secretKey, multCipher1);
     complex<double>* dvecMult2 = scheme.decrypt(secretKey, multCipher2);
     complex<double>* dvecSqr = scheme.decrypt(secretKey, sqrCipher);
+    complex<double>* dvecSqr1 = scheme.decrypt(secretKey, sqrCipher1);
 
     //StringUtils::showcompare(mvecMult, dvecMultNaive, slots, "naivemult");
     
     StringUtils::showcompare(mvecMult, dvecMult1, slots, "two/one");
     StringUtils::showcompare(mvecMult, dvecMult2, slots, "rawmul3");
     StringUtils::showcompare(mvecSqr,  dvecSqr, slots, "sqr");
+    StringUtils::showcompare(mvecSqr,  dvecSqr1, slots, "sqr");
 }
 
 

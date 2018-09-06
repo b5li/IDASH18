@@ -124,13 +124,22 @@ public:
     
     /********************************************************************/
     //! Multi-threading version
+    void mulMT(uint64_t* res, uint64_t* a, uint64_t* b, long l, long k = 0);
+    void mulAndEqualMT(uint64_t* a, uint64_t* b, long l, long k = 0);
+    void leftRotMT(uint64_t* res, uint64_t* a, long l, long rotSlots);
+    void squareMT(uint64_t* res, uint64_t* a, long l, long k = 0);
+    void squareAndEqualMT(uint64_t* a, long l, long k = 0);
+    
+    
     void rnsDecompMT(uint64_t*& res, uint64_t* a, long i, long l);
+    void mulDecompKeyMT(uint64_t*& axtmp, uint64_t*& bxtmp, uint64_t* axi, Key keys, long l);
     void modDownByp0MT(uint64_t*& a, long l);
     
     Ciphertext DecompKeySwitchMT(ExtCiphertext& cipher);
     
     Ciphertext multMT(Ciphertext& cipher1, Ciphertext& cipher2);
     void multAndEqualMT(Ciphertext& cipher1, Ciphertext& cipher2);
+    ExtCiphertext rawsquareMT(Ciphertext& cipher);
     Ciphertext squareMT(Ciphertext& cipher);
     void squareAndEqualMT(Ciphertext& cipher);
     void reScaleByAndEqualMT(ExtCiphertext& cipher, long dl);
