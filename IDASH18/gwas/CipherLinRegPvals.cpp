@@ -353,7 +353,7 @@ void CipherPvals::aggYXData(Ciphertext*& encYX, Ciphertext encYXData, long sdimB
     
     //! Allsum over "sampleDim"
     for(long i = 0; i < sdimBits; ++i){
-        Ciphertext ctemp = extscheme.leftRotateFast(res, (1 << i) * nslots1);
+        Ciphertext ctemp = extscheme.leftRotateFastMT(res, (1 << i) * nslots1);
         scheme.addAndEqual(res, ctemp);
     }
     //fullReplicate4(encYX, res, nslots);
@@ -500,8 +500,8 @@ void CipherPvals::extQuadForm(Ciphertext& res, Ciphertext* encData1, Ciphertext*
     }
     
     //! Final KS rescaling
-    extscheme.reScaleByAndEqual(extres, 1);   // rawmult -> rescaleBy "2"
-    res = extscheme.DecompKeySwitch(extres);
+    extscheme.reScaleByAndEqualMT(extres, 1);   // rawmult -> rescaleBy "2"
+    res = extscheme.DecompKeySwitchMT(extres);
     //scheme.reScaleByAndEqual(res, 1);   // rawmult -> rescaleBy "2"
     
     delete[] tensoring;
@@ -550,8 +550,8 @@ void CipherPvals::extSqrQuadForm(Ciphertext& res, Ciphertext* encData, Ciphertex
         extscheme.addAndEqual(extres, tensoring[i][i]);
     }
     
-    extscheme.reScaleByAndEqual(extres, 1);
-    res = extscheme.DecompKeySwitch(extres);
+    extscheme.reScaleByAndEqualMT(extres, 1);
+    res = extscheme.DecompKeySwitchMT(extres);
     //scheme.reScaleByAndEqual(res, 1);
     
     delete[] tensoring;
