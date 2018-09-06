@@ -69,6 +69,10 @@ public:
     
     void encVecMultipleSData(Ciphertext**& encZS, Ciphertext encVData, Ciphertext*** encSData, uint64_t** poly0, uint64_t** poly, long factorDim, long sampleDim, long nencsnp, long nslots, long subblocksize, long niter, long nstep, long nblock, long* rot);
     
+    void encVecSData_new(Ciphertext*& encZS, Ciphertext encVData, Ciphertext** encSData, uint64_t** poly0, uint64_t** poly, long sampleDim, long nencsnp, long nslots, long subblocksize, long niter, long nstep, long nblock, long* rot);
+    
+    void encVecMultipleSData_new(Ciphertext**& encZS, Ciphertext encVData, Ciphertext*** encSData, uint64_t** poly0, uint64_t** poly, long factorDim, long sampleDim, long nencsnp, long nslots, long subblocksize, long niter, long nstep, long nblock, long* rot);
+    
     /********************************************************************/
     void generateRepAuxPoly(uint64_t**& poly0, uint64_t**& poly, long nslots, long niter, long nstep, long* nblock, long* rot);
     

@@ -267,13 +267,6 @@ void CipherLRPvals::encNLGDiteration(Ciphertext& encWData, Ciphertext encYXData,
     encNLGDiteration_final(encWData, encVData, encYXData, encW0Data[0], encGrad2, poly, fdimBits, sdimBits, xBatchingBits, gamma);
 
     delete[] encW0Data;
-    
-#if 1 //defined(__DEBUG_)
-    double* cwData = new double[factorDim];
-    cipherPvals.decVector(cwData, encWData, factorDim);
-    cout << numIter << ": (w.lvl) = (" << encWData.l  << ") / [" ;
-    cout << cwData[0] << "," << cwData[1] << "," <<  cwData[2] << "," << cwData[3] << "]" << endl;
-#endif
 }
 
 
@@ -301,7 +294,7 @@ void CipherLRPvals::encNLGDiteration0(Ciphertext*& encData, Ciphertext& encGrad,
     //! encGrad = sum_i YX[i]
     encGrad = encYXData;
     for (long l = xBatchingBits; l < xBatchingBits + sdimBits; ++l) {
-        Ciphertext tmp = extscheme.leftRotateFast(encGrad, (1 << l));
+        Ciphertext tmp = extscheme.leftRotateFastMT(encGrad, (1 << l));
         scheme.addAndEqual(encGrad, tmp);
     }
     
@@ -328,32 +321,32 @@ void CipherLRPvals::encNLGDiteration1(Ciphertext& encWData, Ciphertext& encVData
     //!  and  Replicate the inner product to the other slots (v.lvl - 2)
     
     Ciphertext encIP = scheme.modDownTo(encYXData, encVData.l);
-    extscheme.multAndEqual(encIP, encVData);
+    extscheme.multAndEqualMT(encIP, encVData);
     scheme.reScaleByAndEqual(encIP, 1);
     for (long l = 0; l < fdimBits; ++l) {
-        Ciphertext rot = extscheme.leftRotateFast(encIP, (1 << l));
+        Ciphertext rot = extscheme.leftRotateFastMT(encIP, (1 << l));
         scheme.addAndEqual(encIP, rot);
     }
     
     scheme.multByPolyAndEqual(encIP, poly);
     scheme.reScaleByAndEqual(encIP, 1);
     for (long l = 0; l < fdimBits; ++l) {
-        Ciphertext rot = extscheme.rightRotateFast(encIP, (1 << l));
+        Ciphertext rot = extscheme.rightRotateFastMT(encIP, (1 << l));
         scheme.addAndEqual(encIP, rot);
     }
     
     /*******************************************************/
     //! 2. evaluate  "encGrad = sum sig(encIP) * Z[i]" for 0 <= i < n, (w.lvl - 4)
     //!                       = gamma * x * (a[0] + a[1] * IP + a[2] * IP^3)
-    Ciphertext encIP2 = extscheme.square(encIP);
+    Ciphertext encIP2 = extscheme.squareMT(encIP);
     scheme.reScaleByAndEqual(encIP2, 1);
     scheme.addConstAndEqual(encIP2, scaledsigmoid3[1] / scaledsigmoid3[2]); //! IP^2 + a[1]/a[2]
     
     Ciphertext encGrad = scheme.modDownTo(encGrad2, encIP.l);
-    extscheme.multAndEqual(encGrad, encIP);
+    extscheme.multAndEqualMT(encGrad, encIP);
     scheme.reScaleByAndEqual(encGrad, 1);       //! (gamma * a[2] * x) * IP
     
-    extscheme.multAndEqual(encGrad, encIP2);    //! (gamma * a[2] * x * IP) * (IP^2 + a[1]/a[2])
+    extscheme.multAndEqualMT(encGrad, encIP2);    //! (gamma * a[2] * x * IP) * (IP^2 + a[1]/a[2])
     scheme.reScaleByAndEqual(encGrad, 1);
     
     //! 3. Aggregate over "sampleDim"
@@ -390,17 +383,17 @@ void CipherLRPvals::encNLGDiteration2(Ciphertext& encWData, Ciphertext& encVData
     //! and Replicate the inner product to the other slots (v.lvl - 2)
     
     Ciphertext encIP = scheme.modDownTo(encYXData, encVData.l);
-    extscheme.multAndEqual(encIP, encVData);
+    extscheme.multAndEqualMT(encIP, encVData);
     scheme.reScaleByAndEqual(encIP, 1);
     for (long l = 0; l < fdimBits; ++l) {
-        Ciphertext rot = extscheme.leftRotateFast(encIP, (1 << l));
+        Ciphertext rot = extscheme.leftRotateFastMT(encIP, (1 << l));
         scheme.addAndEqual(encIP, rot);
     }
     
     scheme.multByPolyAndEqual(encIP, poly);
     scheme.reScaleByAndEqual(encIP, 1);
     for (long l = 0; l < fdimBits; ++l) {
-        Ciphertext rot = extscheme.rightRotateFast(encIP, (1 << l));
+        Ciphertext rot = extscheme.rightRotateFastMT(encIP, (1 << l));
         scheme.addAndEqual(encIP, rot);
     }
     
@@ -408,7 +401,7 @@ void CipherLRPvals::encNLGDiteration2(Ciphertext& encWData, Ciphertext& encVData
     //! 3. evaluate  "encGrad = sum sig(encIP) * Z[i]" for 0 <= i < n, (w.lvl - 4)
     //!                       = gamma * x * (a[0] + a[1] * IP + a[2] * IP^3)
     
-    Ciphertext encIP2 = extscheme.square(encIP);
+    Ciphertext encIP2 = extscheme.squareMT(encIP);
     scheme.reScaleByAndEqual(encIP2, 1);
     scheme.addConstAndEqual(encIP2, scaledsigmoid3[1] / scaledsigmoid3[2]); //! IP^2 + a[1]/a[2]
     
@@ -420,14 +413,14 @@ void CipherLRPvals::encNLGDiteration2(Ciphertext& encWData, Ciphertext& encVData
     NTL_EXEC_RANGE(2, first, last);
     for(long i = first; i < last; ++i){
         scheme.modDownToAndEqual(encGrad[i], encIP.l);  //! (gamma * a[2] * x) * IP
-        extscheme.multAndEqual(encGrad[i], encIP);
+        extscheme.multAndEqualMT(encGrad[i], encIP);
         scheme.reScaleByAndEqual(encGrad[i], 1);
         
-        extscheme.multAndEqual(encGrad[i], encIP2);     //! (gamma * a[2] * x * IP) * (IP^2 + a[1]/a[2])
+        extscheme.multAndEqualMT(encGrad[i], encIP2);     //! (gamma * a[2] * x * IP) * (IP^2 + a[1]/a[2])
         scheme.reScaleByAndEqual(encGrad[i], 1);
     
         for (long l = xBatchingBits; l < xBatchingBits + sdimBits; ++l) {
-            Ciphertext tmp = extscheme.leftRotateFast(encGrad[i], (1 << l));
+            Ciphertext tmp = extscheme.leftRotateFastMT(encGrad[i], (1 << l));
             scheme.addAndEqual(encGrad[i], tmp);
         }
     }
@@ -486,37 +479,37 @@ void CipherLRPvals::encNLGDiteration_final(Ciphertext& encWData, Ciphertext& enc
     //! and Replicate the inner product to the other slots (v.lvl - 2)
     
     Ciphertext encIP = scheme.modDownTo(encYXData, encVData.l);
-    extscheme.multAndEqual(encIP, encVData);
+    extscheme.multAndEqualMT(encIP, encVData);
     scheme.reScaleByAndEqual(encIP, 1);
     for (long l = 0; l < fdimBits; ++l) {
-        Ciphertext rot = extscheme.leftRotateFast(encIP, (1 << l));
+        Ciphertext rot = extscheme.leftRotateFastMT(encIP, (1 << l));
         scheme.addAndEqual(encIP, rot);
     }
     
     scheme.multByPolyAndEqual(encIP, poly);
     scheme.reScaleByAndEqual(encIP, 1);
     for (long l = 0; l < fdimBits; ++l) {
-        Ciphertext rot = extscheme.rightRotateFast(encIP, (1 << l));
+        Ciphertext rot = extscheme.rightRotateFastMT(encIP, (1 << l));
         scheme.addAndEqual(encIP, rot);
     }
     
     /*******************************************************/
     //! 2. evaluate  "encGrad = sum sig(encIP) * Z[i]" for 0 <= i < n, (w.lvl - 4)
     //!                       = gamma * x * (a[0] + a[1] * IP + a[2] * IP^3)
-    Ciphertext encIP2 = extscheme.square(encIP);
+    Ciphertext encIP2 = extscheme.squareMT(encIP);
     scheme.reScaleByAndEqual(encIP2, 1);
     scheme.addConstAndEqual(encIP2, scaledsigmoid3[1] / scaledsigmoid3[2]); //! IP^2 + a[1]/a[2]
     
     Ciphertext encGrad = scheme.modDownTo(encGrad2, encIP.l);              //! (gamma * a[2] * x) * IP
-    extscheme.multAndEqual(encGrad, encIP);
+    extscheme.multAndEqualMT(encGrad, encIP);
     scheme.reScaleByAndEqual(encGrad, 1);
     
-    extscheme.multAndEqual(encGrad, encIP2);                    //! (gamma * a[2] * x * IP) * (IP^2 + a[1]/a[2])
+    extscheme.multAndEqualMT(encGrad, encIP2);                    //! (gamma * a[2] * x * IP) * (IP^2 + a[1]/a[2])
     scheme.reScaleByAndEqual(encGrad, 1);
     
     //! 3. Aggregate over "sampleDim"
     for (long l = xBatchingBits; l < xBatchingBits + sdimBits; ++l) {
-        Ciphertext tmp = extscheme.leftRotateFast(encGrad, (1 << l));
+        Ciphertext tmp = extscheme.leftRotateFastMT(encGrad, (1 << l));
         scheme.addAndEqual(encGrad, tmp);
     }
 
@@ -542,7 +535,7 @@ void CipherLRPvals::encZWData(Ciphertext& encZData, Ciphertext& encWData, Cipher
     Ciphertext encIP;
     //! 1. encIP = XData * beta (b.lvl - 2)
     if(sdeg == 3){
-        encIP = extscheme.mult(encXData, encBeta);
+        encIP = extscheme.multMT(encXData, encBeta);
     }
     else{
         encIP = scheme.multByConst(encXData, (double) 1/scale);
@@ -552,14 +545,14 @@ void CipherLRPvals::encZWData(Ciphertext& encZData, Ciphertext& encWData, Cipher
     
     scheme.reScaleByAndEqual(encIP, 1);
     for (long l = 0; l < fdimBits; ++l) {
-        Ciphertext rot = extscheme.leftRotateFast(encIP, (1 << l));
+        Ciphertext rot = extscheme.leftRotateFastMT(encIP, (1 << l));
         scheme.addAndEqual(encIP, rot);
     }
     
     scheme.multByPolyAndEqual(encIP, poly);
     scheme.reScaleByAndEqual(encIP, 1);
     for (long l = 0; l < fdimBits; ++l) {
-        Ciphertext tmp = extscheme.rightRotateFast(encIP, (1 << l));
+        Ciphertext tmp = extscheme.rightRotateFastMT(encIP, (1 << l));
         scheme.addAndEqual(encIP, tmp);
     }
     
@@ -572,7 +565,7 @@ void CipherLRPvals::encZWData(Ciphertext& encZData, Ciphertext& encWData, Cipher
 #endif
     /**************************************************/
     //! 2. evaluate  "encPr = sig(XData * beta)" for 0 <= i < n, (b.lvl - 4),
-    Ciphertext encIP2 = extscheme.square(encIP);
+    Ciphertext encIP2 = extscheme.squareMT(encIP);
     scheme.reScaleByAndEqual(encIP2, 1);
     
     Ciphertext* encPr = new Ciphertext[2];
@@ -583,7 +576,7 @@ void CipherLRPvals::encZWData(Ciphertext& encZData, Ciphertext& encWData, Cipher
             scheme.addConstAndEqual(encIP2, sigmoid3[1] / sigmoid3[2]);
             encPr[0] = scheme.multByConst(encIP, sigmoid3[2]);
             scheme.reScaleByAndEqual(encPr[0], 1);
-            extscheme.multAndEqual(encPr[0], encIP2);
+            extscheme.multAndEqualMT(encPr[0], encIP2);
             scheme.reScaleByAndEqual(encPr[0], 1);
             scheme.addConstAndEqual(encPr[0], sigmoid3[0]);
             break;
@@ -605,7 +598,7 @@ void CipherLRPvals::encZWData(Ciphertext& encZData, Ciphertext& encWData, Cipher
             break;
             
         case 7: //! (a0 + a1) * IP + a4 * IP3 * (IP4 + a3/a4 * IP2 + a2/a4)
-            encPr[0] = extscheme.square(encIP2);
+            encPr[0] = extscheme.squareMT(encIP2);
             scheme.reScaleByAndEqual(encPr[0], 1);
             
             tmp = scheme.multByConst(encIP2, scaledsigmoid7[3] / scaledsigmoid7[4]);
@@ -615,7 +608,7 @@ void CipherLRPvals::encZWData(Ciphertext& encZData, Ciphertext& encWData, Cipher
             
             tmp = scheme.multByConst(encIP, scaledsigmoid7[4]);
             scheme.reScaleByAndEqual(tmp, 1);
-            extscheme.multAndEqual(tmp, encIP2);
+            extscheme.multAndEqualMT(tmp, encIP2);
             scheme.reScaleByAndEqual(tmp, 1);
             extscheme.multAndEqual(encPr[0], tmp);
             scheme.reScaleByAndEqual(encPr[0], 1);
@@ -633,10 +626,10 @@ void CipherLRPvals::encZWData(Ciphertext& encZData, Ciphertext& encWData, Cipher
     //!    encW2 = enc(W^2),   (b.lvl - 6)
     encPr[1] = scheme.subConst(encPr[0], 1.0);
     scheme.negateAndEqual(encPr[1]);
-    encWData = extscheme.mult(encPr[0], encPr[1]);
+    encWData = extscheme.multMT(encPr[0], encPr[1]);
     scheme.reScaleByAndEqual(encWData, 1);
     
-    encW2Data = extscheme.square(encWData);
+    encW2Data = extscheme.squareMT(encWData);
     scheme.reScaleByAndEqual(encW2Data, 1);
    
     /**************************************************/
@@ -649,7 +642,7 @@ void CipherLRPvals::encZWData(Ciphertext& encZData, Ciphertext& encWData, Cipher
     }
 
     encZWData = scheme.modDownTo(encIP, encWData.l);
-    extscheme.multAndEqual(encZWData, encWData);
+    extscheme.multAndEqualMT(encZWData, encWData);
     scheme.reScaleByAndEqual(encZWData, 1);
     
     encZData = scheme.sub(encYData, encPr[0]); //! encryption level
@@ -662,7 +655,7 @@ void CipherLRPvals::encZWData(Ciphertext& encZData, Ciphertext& encWData, Cipher
     /**************************************************/
     //! 6. encZ = (y - pr) * Winv + IP,   (b.lvl - 10)
     scheme.modDownToAndEqual(encZData, encWinv.l);
-    extscheme.multAndEqual(encZData, encWinv);
+    extscheme.multAndEqualMT(encZData, encWinv);
     scheme.reScaleByAndEqual(encZData, 1);
     
     tmp = scheme.modDownTo(encIP, encZData.l);
@@ -670,12 +663,13 @@ void CipherLRPvals::encZWData(Ciphertext& encZData, Ciphertext& encWData, Cipher
     //cout << "encZ.l : " << encZData.l << endl;
     
 #if defined(__DEBUG_)
+    double* res = new double[16*5];
     cipherPvals.decVector(res, encPr[0], 16 * 5);
     cout << "Pr : ";
     for(long l = 0; l < 16 * 5; l += 16) cout << res[l] << "," ;
     cout << endl;
     
-    cipherPvals.decVector(res, encWData, 16 * 5);
+    cipherPvals.decVector(res, encWinv, 16 * 5);
     cout << "Pr : ";
     for(long l = 0; l < 16 * 5; l += 16) cout << res[l] << "," ;
     cout << endl;
@@ -685,9 +679,8 @@ void CipherLRPvals::encZWData(Ciphertext& encZData, Ciphertext& encWData, Cipher
     for(long l = 0; l < 16 * 5; l += 16) cout << res[l] << "," ;
     cout << endl;
 
-    double* res = new double[16 * 40];
-    cipherPvals.decVector(res, encZWData, 16 * 40);
-    for(long l = 0; l < 16 * 40; l += 16){
+    cipherPvals.decVector(res, encZWData, 16 * 5);
+    for(long l = 0; l < 16 * 5; l += 16){
         cout << res[l] << endl;
     }
     cout << endl;
@@ -728,7 +721,7 @@ void CipherLRPvals::encTwoInverse(Ciphertext& encWinv, Ciphertext encPr1, Cipher
     }
     NTL_EXEC_RANGE_END;
     
-    encWinv = extscheme.mult(res[0], res[1]);
+    encWinv = extscheme.multMT(res[0], res[1]);
     scheme.reScaleByAndEqual(encWinv, 1);
     
     delete[] res;
@@ -817,7 +810,7 @@ void CipherLRPvals::encZXData(Ciphertext*& encZX, Ciphertext encXData, Ciphertex
     long nslots1 = nbatching * factorDim;  // nbatching = replicated number of a user's data in a single ciphertext
     
     Ciphertext encZXData = scheme.modDownTo(encXData, encZData.l);
-    extscheme.multAndEqual(encZXData, encZData);
+    extscheme.multAndEqualMT(encZXData, encZData);
     scheme.reScaleByAndEqual(encZXData, 1);
     
     //! Allsum over "sampleDim"
@@ -928,8 +921,8 @@ void CipherLRPvals::extQuadForm(Ciphertext& res0, Ciphertext& res1, Ciphertext* 
     }
     
     //! Final KS rescaling
-    res0 = extscheme.DecompKeySwitch(extres0);
-    res1 = extscheme.DecompKeySwitch(extres1);
+    res0 = extscheme.DecompKeySwitchMT(extres0);
+    res1 = extscheme.DecompKeySwitchMT(extres1);
     
     scheme.reScaleByAndEqual(res0, 1);
     scheme.reScaleByAndEqual(res1, 1);
@@ -984,6 +977,7 @@ void CipherLRPvals::generateRepAuxPoly(uint64_t**& poly0, uint64_t**& poly, long
 //!@ Firstly replicate, raw-multiply, RS and KS
 //!@ suppose that encVec.l = encSData.l + 5
 //!@ replicate(encVec.l) = encSData.l
+//!@ Output: encZS[nencsnp]
 void CipherLRPvals::encVecSData(Ciphertext*& encZS, Ciphertext encVec, Ciphertext** encSData, uint64_t** poly0, uint64_t** poly, long sampleDim, long nencsnp,  long nslots, long subblocksize, long niter, long nstep, long nblock, long* rot){
 
     //cout << encSData[0][0].l << "," << (encVec.l - 1) << endl;
@@ -996,6 +990,7 @@ void CipherLRPvals::encVecSData(Ciphertext*& encZS, Ciphertext encVec, Ciphertex
     ExtCiphertext** res = new ExtCiphertext*[niter];
     
     long logrot = (long) ceil(log2(nslots/nblock));
+    long niter1 = niter - 1;
     
     NTL_EXEC_RANGE(niter, first, last);
     for (long i = first; i < last; ++i) {
@@ -1012,7 +1007,7 @@ void CipherLRPvals::encVecSData(Ciphertext*& encZS, Ciphertext encVec, Ciphertex
     
         //! second layer: res[niter][nencsnp]
         res[i] = new ExtCiphertext[nencsnp];
-        if(i < niter - 1){
+        if(i != niter1){
             fullReplicate16(tmp, tmp[0], poly, rot);      //! subReplicate(tmp[i], tmp[i][0], poly, subblocksize, nstep, rot);
             
             long i1 = (i * subblocksize);
@@ -1030,7 +1025,7 @@ void CipherLRPvals::encVecSData(Ciphertext*& encZS, Ciphertext encVec, Ciphertex
         
         //! final sub-block
         else{
-            long nvals = sampleDim - (niter - 1) * subblocksize;                          //! number of final slots
+            long nvals = sampleDim - niter1 * subblocksize;                          //! number of final slots
             sparseReplicate16(tmp, tmp[0], poly, nslots, nvals, rot);
             
             long i1 = (i * subblocksize);
@@ -1054,7 +1049,7 @@ void CipherLRPvals::encVecSData(Ciphertext*& encZS, Ciphertext encVec, Ciphertex
             extscheme.addAndEqual(res[0][j], res[i][j]);
         }
         extscheme.reScaleByAndEqual(res[0][j], 1);
-        encZS[j] = extscheme.DecompKeySwitch(res[0][j]);
+        encZS[j] = extscheme.DecompKeySwitchMT(res[0][j]);
     }
     //delete[] tmp;
     delete[] res;
@@ -1070,6 +1065,7 @@ void CipherLRPvals::encVecMultipleSData(Ciphertext**& encZS, Ciphertext encVec, 
     ExtCiphertext*** res = new ExtCiphertext**[niter];
     
     long logrot = (long) ceil(log2(nslots/nblock));
+    long niter1 = niter - 1;
     
     NTL_EXEC_RANGE(niter, first, last);
     for (long i = first; i < last; ++i) {
@@ -1086,7 +1082,7 @@ void CipherLRPvals::encVecMultipleSData(Ciphertext**& encZS, Ciphertext encVec, 
         
         //! second layer: res[niter][nencsnp][factorDim]
         res[i] = new ExtCiphertext*[nencsnp];
-        if(i < niter - 1){
+        if(i != niter1){
             fullReplicate16(tmp, tmp[0], poly, rot);      //! subReplicate(tmp[i], tmp[i][0], poly, subblocksize, nstep, rot);
             
             long i1 = (i * subblocksize);
@@ -1107,7 +1103,7 @@ void CipherLRPvals::encVecMultipleSData(Ciphertext**& encZS, Ciphertext encVec, 
         
         //! final sub-block
         else{
-            long nvals = sampleDim - (niter - 1) * subblocksize;                          //! number of final slots
+            long nvals = sampleDim - niter1 * subblocksize;                          //! number of final slots
             sparseReplicate16(tmp, tmp[0], poly, nslots, nvals, rot);
             
             long i1 = (i * subblocksize);
@@ -1130,13 +1126,15 @@ void CipherLRPvals::encVecMultipleSData(Ciphertext**& encZS, Ciphertext encVec, 
     
     for(long j = 0; j < nencsnp; ++j){
         encZS[j] = new Ciphertext[factorDim];
-        for(long k = 0; k < factorDim; ++k){
+        NTL_EXEC_RANGE(factorDim, first, last);
+        for (long k = first; k < last; ++k) {
             for(long i = 1; i < niter; ++i){
                 extscheme.addAndEqual(res[0][j][k], res[i][j][k]);
             }
             extscheme.reScaleByAndEqual(res[0][j][k], 1);
-            encZS[j][k] = extscheme.DecompKeySwitch(res[0][j][k]);
+            encZS[j][k] = extscheme.DecompKeySwitchMT(res[0][j][k]);
         }
+        NTL_EXEC_RANGE_END
     }
     
     //delete[] tmp;
@@ -1150,6 +1148,7 @@ void CipherLRPvals::encVecMultipleSData(Ciphertext**& encZS, Ciphertext encVec, 
 void CipherLRPvals::fullReplicate16(Ciphertext*& res, Ciphertext encData, uint64_t** poly, long* rot){
     
     Ciphertext* tmp = new Ciphertext[8];
+    
     // "+--------------------------------------------------------+"
     //!  0st layer : E(0,1,2,3,4,5,6,7) / E(8,..., 15)
     // "+--------------------------------------------------------+"
@@ -1331,6 +1330,91 @@ void CipherLRPvals::sparseReplicate16(Ciphertext*& res, Ciphertext encData, uint
         scheme.addAndEqual(res[i], ctemp);
     }
     delete[] tmp;
+}
+
+void CipherLRPvals::encVecSData_new(Ciphertext*& encZS, Ciphertext encVec, Ciphertext** encSData, uint64_t** poly0, uint64_t** poly, long sampleDim, long nencsnp,  long nslots, long subblocksize, long niter, long nstep, long nblock, long* rot){
+    
+    //cout << encSData[0][0].l << "," << (encVec.l - 1) << endl;
+    // "+------------------------------------+"
+    //! 1. first step, 1 lvl, (sampleDim/subblocksize) * logrot Rot
+    //!    second step: Enc(z0,..., z15) -> Enc(z0),...,Enc(z15)
+    // "+------------------------------------+"
+    complex<double>* pvals = new complex<double>[nslots];
+    uint64_t* poly1 = new uint64_t[scheme.context.L << scheme.context.logN];
+    for(long j = 0; j < 64 ; j += 4){
+        pvals[j].real(1.0);
+    }
+    scheme.context.encode(poly1, pvals, nslots, scheme.context.L);
+    
+    Ciphertext* tmp = new Ciphertext[256];
+    
+    NTL_EXEC_RANGE(256, first, last);
+    for (long i = first; i < last; ++i) {
+        tmp[i] = extscheme.mult(encVec, encSData[0][0]);
+        scheme.reScaleByAndEqual(tmp[i], 1);
+        for(long j = 0; j < 8; ++j){
+            Ciphertext ctemp = extscheme.leftRotateFast(tmp[i], (1 << j) * 64);
+            scheme.addAndEqual(tmp[i], ctemp);
+        }
+        scheme.multByPolyAndEqual(tmp[i], poly1);
+    }
+    NTL_EXEC_RANGE_END
+    
+    for(long i = 1; i < 256; ++i){
+        scheme.addAndEqual(tmp[0], tmp[i]);
+    }
+    for(long i = 0; i < nencsnp; ++i){
+        encZS[i] = tmp[0];
+        scheme.reScaleByAndEqual(encZS[i], 1);
+    }
+    
+}
+
+//!@ Output: encZX[nencsnp][k]
+void CipherLRPvals::encVecMultipleSData_new(Ciphertext**& encZS, Ciphertext encVec, Ciphertext*** encSData, uint64_t** poly0, uint64_t** poly, long factorDim, long sampleDim, long nencsnp,  long nslots, long subblocksize, long niter, long nstep, long nblock, long* rot){
+    
+    auto start = chrono::steady_clock::now();
+    
+    complex<double>* pvals = new complex<double>[nslots];
+    uint64_t* poly1 = new uint64_t[scheme.context.L << scheme.context.logN];
+    for(long j = 0; j < 64 ; j += 4){
+        pvals[j].real(1.0);
+    }
+    scheme.context.encode(poly1, pvals, nslots, scheme.context.L);
+    
+    Ciphertext* tmp = new Ciphertext[256];
+    
+    NTL_EXEC_RANGE(256, first, last);
+    for (long i = first; i < last; ++i) {
+        cout << i << endl; 
+        for(long k = 0; k < factorDim; ++k){
+            tmp[i] = extscheme.mult(encVec, encSData[0][0][0]);
+            scheme.reScaleByAndEqual(tmp[i], 1);
+            for(long j = 0; j < 8; ++j){
+                Ciphertext ctemp = extscheme.leftRotateFast(tmp[i], (1 << j) * 64);
+                scheme.addAndEqual(tmp[i], ctemp);
+            }
+            scheme.multByPolyAndEqual(tmp[i], poly1);
+        }
+    }
+    NTL_EXEC_RANGE_END
+    
+    auto end = std::chrono::steady_clock::now();
+    auto diff = end - start;
+    double timeElapsed = chrono::duration <double, milli> (diff).count()/1000.0;
+    cout << "Scheme generation time= " << timeElapsed << " s" << endl;
+    
+    
+    for(long i = 1; i < 256; ++i){
+        scheme.addAndEqual(tmp[0], tmp[i]);
+    }
+    for(long i = 0; i < nencsnp; ++i){
+        for(long k = 0; k < factorDim; ++k){
+            encZS[i][k] = tmp[0];
+            scheme.reScaleByAndEqual(encZS[i][k], 1); 
+        }
+    }
+    
 }
 
 //! Input: encData(X[1], ..., X[n]) s.t.  nbatching times of (x1,x1,x1,x1)
