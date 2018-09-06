@@ -48,8 +48,7 @@ void ExtScheme::addThreeMultKey(SecretKey& secretKey) {
 
 //!@ Generate the evaluation key = Enc(pVec[0] * RNS(Ei) * s^2)
 void ExtScheme::addDecompTwoKeys(SecretKey& secretKey){
-    uint64_t** ax = new uint64_t*[context.L];
-    uint64_t** bx = new uint64_t*[context.L];
+
     uint64_t* p0sx2 = new uint64_t[context.L << context.logN];
     
     //! Compute pVec[0] * s^2
@@ -60,8 +59,8 @@ void ExtScheme::addDecompTwoKeys(SecretKey& secretKey){
     uint64_t* ex = new uint64_t[(context.L + 1) << context.logN];
     
     for(long i = 0; i < context.L; ++i){
-        ax[i] = new uint64_t[(context.L + 1) << context.logN];
-        bx[i] = new uint64_t[(context.L + 1) << context.logN];
+        uint64_t* ax = new uint64_t[(context.L + 1) << context.logN];
+        uint64_t* bx = new uint64_t[(context.L + 1) << context.logN];
         
         context.sampleGauss(ex, context.L, 1);
         context.NTTAndEqual(ex, context.L, 1);
@@ -69,11 +68,11 @@ void ExtScheme::addDecompTwoKeys(SecretKey& secretKey){
         //! Add pVec[0] * s^2 to i-th poly
         context.qiAddAndEqual(ex + (i << context.logN), p0sx2 + (i << context.logN), i);
         
-        context.sampleUniform(ax[i], context.L, 1);
-        context.mul(bx[i], ax[i], secretKey.sx, context.L, 1);
-        context.sub2AndEqual(ex, bx[i], context.L, 1);
+        context.sampleUniform(ax, context.L, 1);
+        context.mul(bx, ax, secretKey.sx, context.L, 1);
+        context.sub2AndEqual(ex, bx, context.L, 1);
         
-        decompTwoKeyMap.insert(pair<long, Key>(i, Key(ax[i], bx[i])));
+        decompTwoKeyMap.insert(pair<long, Key>(i, Key(ax, bx)));
     }
     delete[] ex;
     delete[] p0sx2;
@@ -81,8 +80,8 @@ void ExtScheme::addDecompTwoKeys(SecretKey& secretKey){
 
 //!@ Generate the evaluation key = Enc(pVec[0] * RNS(Ei) * s^3)
 void ExtScheme::addDecompThreeKeys(SecretKey& secretKey){
-    uint64_t** ax = new uint64_t*[context.L];
-    uint64_t** bx = new uint64_t*[context.L];
+    //uint64_t** ax = new uint64_t*[context.L];
+    //uint64_t** bx = new uint64_t*[context.L];
  
     uint64_t* p0sx3 = new uint64_t[context.L << context.logN];
     
@@ -95,20 +94,20 @@ void ExtScheme::addDecompThreeKeys(SecretKey& secretKey){
     uint64_t* ex = new uint64_t[(context.L + 1) << context.logN];
  
     for(long i = 0; i < context.L; ++i){
-        ax[i] = new uint64_t[(context.L + 1) << context.logN];
-        bx[i] = new uint64_t[(context.L + 1) << context.logN];
- 
+        uint64_t* ax = new uint64_t[(context.L + 1) << context.logN];
+        uint64_t* bx = new uint64_t[(context.L + 1) << context.logN];
+        
         context.sampleGauss(ex, context.L, 1);
         context.NTTAndEqual(ex, context.L, 1);
         
         // Add pVec[0] * s^2 to i-th poly
         context.qiAddAndEqual(ex + (i << context.logN), p0sx3 + (i << context.logN), i);
  
-        context.sampleUniform(ax[i], context.L, 1);
-        context.mul(bx[i], ax[i], secretKey.sx, context.L, 1);
-        context.sub2AndEqual(ex, bx[i], context.L, 1);
+        context.sampleUniform(ax, context.L, 1);
+        context.mul(bx, ax, secretKey.sx, context.L, 1);
+        context.sub2AndEqual(ex, bx, context.L, 1);
  
-        decompThreeKeyMap.insert(pair<long, Key>(i, Key(ax[i], bx[i])));
+        decompThreeKeyMap.insert(pair<long, Key>(i, Key(ax, bx)));
     }
     delete[] ex;
     delete[] p0sx3;
@@ -116,8 +115,6 @@ void ExtScheme::addDecompThreeKeys(SecretKey& secretKey){
 
 //!@ Generate the evaluation key = Enc(pVec[0] * RNS(Ei) * s^3)
 void ExtScheme::addDecompLeftRotKey(SecretKey& secretKey, long rot){
-    uint64_t** ax = new uint64_t*[context.L];
-    uint64_t** bx = new uint64_t*[context.L];
     
     uint64_t* p0sxrot = new uint64_t[context.L << context.logN];
     
@@ -129,8 +126,8 @@ void ExtScheme::addDecompLeftRotKey(SecretKey& secretKey, long rot){
     uint64_t* ex = new uint64_t[(context.L + 1) << context.logN];
     
     for(long i = 0; i < context.L; ++i){
-        ax[i] = new uint64_t[(context.L + 1) << context.logN];
-        bx[i] = new uint64_t[(context.L + 1) << context.logN];
+        uint64_t* ax = new uint64_t[(context.L + 1) << context.logN];
+        uint64_t* bx = new uint64_t[(context.L + 1) << context.logN];
         
         context.sampleGauss(ex, context.L, 1);
         context.NTTAndEqual(ex, context.L, 1);
@@ -138,11 +135,11 @@ void ExtScheme::addDecompLeftRotKey(SecretKey& secretKey, long rot){
         //! Add pVec[0] * s^2 to i-th poly
         context.qiAddAndEqual(ex + (i << context.logN), p0sxrot + (i << context.logN), i);
         
-        context.sampleUniform(ax[i], context.L, 1);
-        context.mul(bx[i], ax[i], secretKey.sx, context.L, 1);
-        context.sub2AndEqual(ex, bx[i], context.L, 1);
+        context.sampleUniform(ax, context.L, 1);
+        context.mul(bx, ax, secretKey.sx, context.L, 1);
+        context.sub2AndEqual(ex, bx, context.L, 1);
         
-        decompLeftRotKeyMap.insert(pair< pair<long, long>, Key> (make_pair(rot, i), Key(ax[i], bx[i])));
+        decompLeftRotKeyMap.insert(pair< pair<long, long>, Key> (make_pair(rot, i), Key(ax, bx)));
     }
     delete[] ex;
     delete[] p0sxrot;
@@ -744,22 +741,15 @@ Ciphertext ExtScheme::leftRotateFast(Ciphertext& cipher, long rotSlots){
     context.leftRot(axres, cipher.ax, cipher.l, rotSlots);
     
     //! Key Switching of a(X^k)
-    
     for(long i = 0; i < cipher.l; ++i){
         Key keys = decompLeftRotKeyMap.at(make_pair(rotSlots, i));
-        
-        //! Generate RNS(axi) mod p_0, q_l
         rnsDecomp(axi, axres, i, cipher.l);
-        
-        //! multiply by the evaluation key: axtmp, bxtmp
         mulDecompKey(axtmp, bxtmp, axi, keys, cipher.l);
-        
-        //! aggregate
         context.addAndEqual(axmult, axtmp, cipher.l, 1);
         context.addAndEqual(bxmult, bxtmp, cipher.l, 1);
     }
     
-    // ModDown by pVec[0]
+    //! ModDown by pVec[0]
     modDownByp0(axmult, cipher.l);
     modDownByp0(bxmult, cipher.l);
     
@@ -936,10 +926,48 @@ void ExtScheme::squareAndEqual(Ciphertext& cipher){
 /**************************************************************************************/
 //! Multi-threading version
 
-Ciphertext ExtScheme::DecompKeySwitchMT(ExtCiphertext& cipher) {
-    uint64_t** axtmp = new uint64_t*[cipher.l];
-    uint64_t** bxtmp = new uint64_t*[cipher.l];
+//!@ Functions for DecompKS
+void ExtScheme::rnsDecompMT(uint64_t*& res, uint64_t* a, long i, long l){
+    uint64_t* ai = new uint64_t[context.N];
+    copy(a + (i << context.logN), a + ((i + 1) << context.logN), ai);
+    context.qiINTTAndEqual(ai, i);
     
+    NTL_EXEC_RANGE(l, first, last);
+    for (long j = first; j < last; ++j) {
+    //for(long j = 0; j < l; ++j){
+        uint64_t* resj = res + (j << context.logN);
+        context.qiNTT(resj, ai, j);
+    }
+    NTL_EXEC_RANGE_END
+    
+    context.piNTT(res + (l << context.logN), ai, 0);
+    delete[] ai;
+}
+
+
+void ExtScheme::modDownByp0MT(uint64_t*& a, long l){
+    uint64_t* al = a + (l << context.logN);
+    context.piINTTAndEqual(al, 0);
+    
+    NTL_EXEC_RANGE(l, first, last);
+    for (long i = first; i < last; ++i) {
+  
+        uint64_t* ai = a + (i << context.logN);
+        uint64_t* tmp = new uint64_t[context.N];
+        context.qiNTT(tmp, al, i);
+        context.qiSubAndEqual(ai, tmp, i);
+        context.qiMulConstAndEqual(ai, p0InvModqi[i], i);
+    }
+    NTL_EXEC_RANGE_END
+  
+}
+
+
+Ciphertext ExtScheme::DecompKeySwitchMT(ExtCiphertext& cipher) {
+    
+    uint64_t* axi = new uint64_t[(cipher.l + 1) << context.logN];
+    uint64_t* axtmp = new uint64_t[(cipher.l + 1) << context.logN];
+    uint64_t* bxtmp = new uint64_t[(cipher.l + 1) << context.logN];
     uint64_t* axmult2 = new uint64_t[(cipher.l + 1) << context.logN]();
     uint64_t* bxmult2 = new uint64_t[(cipher.l + 1) << context.logN]();
     uint64_t* axmult3 = new uint64_t[(cipher.l + 1) << context.logN]();
@@ -950,93 +978,37 @@ Ciphertext ExtScheme::DecompKeySwitchMT(ExtCiphertext& cipher) {
     
     //! s^2 -> s
     if(cipher.deg > 1){
-        NTL_EXEC_RANGE(cipher.l, first, last);
-        for (long i = first; i < last; ++i) {
-            Key keys = decompTwoKeyMap.at(i);
-            
-            uint64_t* axi = new uint64_t[(cipher.l + 1) << context.logN];
-            rnsDecomp(axi, cipher.ax[1], i, cipher.l);
-            
-            axtmp[i] = new uint64_t[(cipher.l + 1) << context.logN];
-            bxtmp[i] = new uint64_t[(cipher.l + 1) << context.logN];
-            mulDecompKey(axtmp[i], bxtmp[i], axi, keys, cipher.l);
-        }
-        NTL_EXEC_RANGE_END
-        
         for(long i = 0; i < cipher.l; ++i){
-            context.addAndEqual(axmult2, axtmp[i], cipher.l, 1);
-            context.addAndEqual(bxmult2, bxtmp[i], cipher.l, 1);
+            Key keys = decompTwoKeyMap.at(i);
+            rnsDecompMT(axi, cipher.ax[1], i, cipher.l);
+            mulDecompKey(axtmp, bxtmp, axi, keys, cipher.l);
+            context.addAndEqual(axmult2, axtmp, cipher.l, 1);
+            context.addAndEqual(bxmult2, bxtmp, cipher.l, 1);
         }
-        
-        uint64_t* al = axmult2 + (cipher.l << context.logN);
-        uint64_t* bl = bxmult2 + (cipher.l << context.logN);
-        context.piINTTAndEqual(al, 0);
-        context.piINTTAndEqual(bl, 0);
-        
-        NTL_EXEC_RANGE(cipher.l, first, last);
-        for (long i = first; i < last; ++i) {
-            uint64_t* ai = axmult2 + (i << context.logN);
-            uint64_t* atmp = new uint64_t[context.N];
-            context.qiNTT(atmp, al, i);
-            context.qiSubAndEqual(ai, atmp, i);
-            context.qiMulConstAndEqual(ai, p0InvModqi[i], i);
-            
-            uint64_t* bi = bxmult2 + (i << context.logN);
-            uint64_t* btmp = new uint64_t[context.N];
-            context.qiNTT(btmp, bl, i);
-            context.qiSubAndEqual(bi, btmp, i);
-            context.qiMulConstAndEqual(bi, p0InvModqi[i], i);
-        }
-        NTL_EXEC_RANGE_END
-        
-        //! aggregate
+        modDownByp0MT(axmult2, cipher.l);
+        modDownByp0MT(bxmult2, cipher.l);
+    
         context.add(axres, axmult2, cipher.ax[0], cipher.l);
         context.add(bxres, bxmult2, cipher.bx, cipher.l);
     }
     
     //! s^3 -> s
     if(cipher.deg > 2){
-        NTL_EXEC_RANGE(cipher.l, first, last);
-        for (long i = first; i < last; ++i) {
-            Key keys = decompThreeKeyMap.at(i);
-            
-            uint64_t* axi = new uint64_t[(cipher.l + 1) << context.logN];
-            rnsDecomp(axi, cipher.ax[2], i, cipher.l);
-            
-            mulDecompKey(axtmp[i], bxtmp[i], axi, keys, cipher.l);
-        }
-        NTL_EXEC_RANGE_END
-        
         for(long i = 0; i < cipher.l; ++i){
-            context.addAndEqual(axmult3, axtmp[i], cipher.l, 1);
-            context.addAndEqual(bxmult3, bxtmp[i], cipher.l, 1);
+            Key keys = decompThreeKeyMap.at(i);
+            rnsDecompMT(axi, cipher.ax[2], i, cipher.l);
+            mulDecompKey(axtmp, bxtmp, axi, keys, cipher.l);
+            context.addAndEqual(axmult3, axtmp, cipher.l, 1);
+            context.addAndEqual(bxmult3, bxtmp, cipher.l, 1);
         }
-        
-        uint64_t* al = axmult3 + (cipher.l << context.logN);
-        uint64_t* bl = bxmult3 + (cipher.l << context.logN);
-        context.piINTTAndEqual(al, 0);
-        context.piINTTAndEqual(bl, 0);
-        
-        NTL_EXEC_RANGE(cipher.l, first, last);
-        for (long i = first; i < last; ++i) {
-            uint64_t* ai = axmult3 + (i << context.logN);
-            uint64_t* atmp = new uint64_t[context.N];
-            context.qiNTT(atmp, al, i);
-            context.qiSubAndEqual(ai, atmp, i);
-            context.qiMulConstAndEqual(ai, p0InvModqi[i], i);
-            
-            uint64_t* bi = bxmult3 + (i << context.logN);
-            uint64_t* btmp = new uint64_t[context.N];
-            context.qiNTT(btmp, bl, i);
-            context.qiSubAndEqual(bi, btmp, i);
-            context.qiMulConstAndEqual(bi, p0InvModqi[i], i);
-        }
-        NTL_EXEC_RANGE_END
+        modDownByp0MT(axmult3, cipher.l);
+        modDownByp0MT(bxmult3, cipher.l);
         
         context.addAndEqual(axres, axmult3, cipher.l);
         context.addAndEqual(bxres, bxmult3, cipher.l);
     }
     
+    delete[] axi;
     delete[] axmult2;
     delete[] bxmult2;
     delete[] axmult3;
@@ -1067,55 +1039,29 @@ Ciphertext ExtScheme::multMT(Ciphertext& cipher1, Ciphertext& cipher2){
     context.subAndEqual(axbx1, bxbx, cipher1.l);
     context.subAndEqual(axbx1, axax, cipher1.l);
     
-    
-    uint64_t** axtmp = new uint64_t*[cipher1.l];
-    uint64_t** bxtmp = new uint64_t*[cipher1.l];
+    uint64_t* axi = new uint64_t[(cipher1.l + 1) << context.logN];
+    uint64_t* axtmp = new uint64_t[(cipher1.l + 1) << context.logN];
+    uint64_t* bxtmp = new uint64_t[(cipher1.l + 1) << context.logN];
     uint64_t* axmult2 = new uint64_t[(cipher1.l + 1) << context.logN]();
     uint64_t* bxmult2 = new uint64_t[(cipher1.l + 1) << context.logN]();
     
     //! Key switching of axax (s^2 -> s)
-    NTL_EXEC_RANGE(cipher1.l, first, last);
-    for (long i = first; i < last; ++i) {
-        Key keys = decompTwoKeyMap.at(i);
-        
-        uint64_t* axi = new uint64_t[(cipher1.l + 1) << context.logN];
-        rnsDecomp(axi, axax, i, cipher1.l);
-        
-        axtmp[i] = new uint64_t[(cipher1.l + 1) << context.logN];
-        bxtmp[i] = new uint64_t[(cipher1.l + 1) << context.logN];
-        mulDecompKey(axtmp[i], bxtmp[i], axi, keys, cipher1.l);
-    }
-    NTL_EXEC_RANGE_END
-    
     for(long i = 0; i < cipher1.l; ++i){
-        context.addAndEqual(axmult2, axtmp[i], cipher1.l, 1);
-        context.addAndEqual(bxmult2, bxtmp[i], cipher1.l, 1);
-    }
-    
-    uint64_t* al = axmult2 + (cipher1.l << context.logN);
-    uint64_t* bl = bxmult2 + (cipher1.l << context.logN);
-    context.piINTTAndEqual(al, 0);
-    context.piINTTAndEqual(bl, 0);
-    
-    NTL_EXEC_RANGE(cipher1.l, first, last);
-    for (long i = first; i < last; ++i) {
-        uint64_t* ai = axmult2 + (i << context.logN);
-        uint64_t* atmp = new uint64_t[context.N];
-        context.qiNTT(atmp, al, i);
-        context.qiSubAndEqual(ai, atmp, i);
-        context.qiMulConstAndEqual(ai, p0InvModqi[i], i);
+        Key keys = decompTwoKeyMap.at(i);
+        rnsDecompMT(axi, axax, i, cipher1.l);
+        mulDecompKey(axtmp, bxtmp, axi, keys, cipher1.l);
         
-        uint64_t* bi = bxmult2 + (i << context.logN);
-        uint64_t* btmp = new uint64_t[context.N];
-        context.qiNTT(btmp, bl, i);
-        context.qiSubAndEqual(bi, btmp, i);
-        context.qiMulConstAndEqual(bi, p0InvModqi[i], i);
+        context.addAndEqual(axmult2, axtmp, cipher1.l, 1);
+        context.addAndEqual(bxmult2, bxtmp, cipher1.l, 1);
     }
-    NTL_EXEC_RANGE_END
+    
+    modDownByp0MT(axmult2, cipher1.l);
+    modDownByp0MT(bxmult2, cipher1.l);
     
     context.addAndEqual(axbx1, axmult2, cipher1.l);
     context.addAndEqual(bxbx, bxmult2, cipher1.l);
-   
+    
+    delete[] axi;
     delete[] axbx2;
     delete[] axmult2;
     delete[] bxmult2;
@@ -1129,9 +1075,6 @@ void ExtScheme::multAndEqualMT(Ciphertext& cipher1, Ciphertext& cipher2){
     uint64_t* axbx1 = new uint64_t[cipher1.l << context.logN]();
     uint64_t* axbx2 = new uint64_t[cipher1.l << context.logN]();
     
-    //uint64_t* axax = new uint64_t[cipher1.l << context.logN]();
-    //uint64_t* bxbx = new uint64_t[cipher1.l << context.logN]();
-    
     //! return: (cipher1.bx, (axbx1, cipher1.ax)), (1, s, s2)
     context.add(axbx1, cipher1.ax, cipher1.bx, cipher1.l);  //! (a1 + b1)
     context.add(axbx2, cipher2.ax, cipher2.bx, cipher2.l);  //! (a2 + b2)
@@ -1143,63 +1086,34 @@ void ExtScheme::multAndEqualMT(Ciphertext& cipher1, Ciphertext& cipher2){
     context.subAndEqual(axbx1, cipher1.bx, cipher1.l);
     context.subAndEqual(axbx1, cipher1.ax, cipher1.l);
     
-    uint64_t** axtmp = new uint64_t*[cipher1.l];
-    uint64_t** bxtmp = new uint64_t*[cipher1.l];
+    uint64_t* axi = new uint64_t[(cipher1.l + 1) << context.logN];
+    uint64_t* axtmp = new uint64_t[(cipher1.l + 1) << context.logN];
+    uint64_t* bxtmp = new uint64_t[(cipher1.l + 1) << context.logN];
     uint64_t* axmult2 = new uint64_t[(cipher1.l + 1) << context.logN]();
     uint64_t* bxmult2 = new uint64_t[(cipher1.l + 1) << context.logN]();
     
-    //! Key switching of axax (s^2 -> s)
-    NTL_EXEC_RANGE(cipher1.l, first, last);
-    for (long i = first; i < last; ++i) {
-        Key keys = decompTwoKeyMap.at(i);
-        
-        uint64_t* axi = new uint64_t[(cipher1.l + 1) << context.logN];
-        rnsDecomp(axi, cipher1.ax, i, cipher1.l);
-        
-        axtmp[i] = new uint64_t[(cipher1.l + 1) << context.logN];
-        bxtmp[i] = new uint64_t[(cipher1.l + 1) << context.logN];
-        mulDecompKey(axtmp[i], bxtmp[i], axi, keys, cipher1.l);
-    }
-    NTL_EXEC_RANGE_END
-    
+    //! Key switching of cipher1.ax (s^2 -> s)
     for(long i = 0; i < cipher1.l; ++i){
-        context.addAndEqual(axmult2, axtmp[i], cipher1.l, 1);
-        context.addAndEqual(bxmult2, bxtmp[i], cipher1.l, 1);
-    }
-    
-    uint64_t* al = axmult2 + (cipher1.l << context.logN);
-    uint64_t* bl = bxmult2 + (cipher1.l << context.logN);
-    context.piINTTAndEqual(al, 0);
-    context.piINTTAndEqual(bl, 0);
-    
-    NTL_EXEC_RANGE(cipher1.l, first, last);
-    for (long i = first; i < last; ++i) {
-        uint64_t* ai = axmult2 + (i << context.logN);
-        uint64_t* atmp = new uint64_t[context.N];
-        context.qiNTT(atmp, al, i);
-        context.qiSubAndEqual(ai, atmp, i);
-        context.qiMulConstAndEqual(ai, p0InvModqi[i], i);
+        Key keys = decompTwoKeyMap.at(i);
+        rnsDecompMT(axi, cipher1.ax, i, cipher1.l);
+        mulDecompKey(axtmp, bxtmp, axi, keys, cipher1.l);
         
-        uint64_t* bi = bxmult2 + (i << context.logN);
-        uint64_t* btmp = new uint64_t[context.N];
-        context.qiNTT(btmp, bl, i);
-        context.qiSubAndEqual(bi, btmp, i);
-        context.qiMulConstAndEqual(bi, p0InvModqi[i], i);
+        context.addAndEqual(axmult2, axtmp, cipher1.l, 1);
+        context.addAndEqual(bxmult2, bxtmp, cipher1.l, 1);
     }
-    NTL_EXEC_RANGE_END
+    modDownByp0MT(axmult2, cipher1.l);
+    modDownByp0MT(bxmult2, cipher1.l);
     
     context.add(cipher1.ax, axbx1, axmult2, cipher1.l);
     context.addAndEqual(cipher1.bx, bxmult2, cipher1.l);
     
+    delete[] axi;
     delete[] axbx1;
     delete[] axbx2;
     delete[] axmult2;
     delete[] bxmult2;
     delete[] axtmp;
     delete[] bxtmp;
-    
-    //ExtCiphertext extcipher = rawmult(cipher1, cipher2);
-    //cipher1 = DecompKeySwitch(extcipher);
 }
 
 //! Rotation by rotSlots (rotSlots: PoT)
@@ -1208,9 +1122,9 @@ Ciphertext ExtScheme::leftRotateFastMT(Ciphertext& cipher, long rotSlots){
     uint64_t* axres = new uint64_t[cipher.l << context.logN]();
     uint64_t* bxres = new uint64_t[cipher.l << context.logN]();
     
-    uint64_t** axtmp = new uint64_t*[cipher.l];
-    uint64_t** bxtmp = new uint64_t*[cipher.l];
-    
+    uint64_t* axi = new uint64_t[(cipher.l + 1) << context.logN];
+    uint64_t* axtmp = new uint64_t[(cipher.l + 1) << context.logN];
+    uint64_t* bxtmp = new uint64_t[(cipher.l + 1) << context.logN];
     uint64_t* axmult = new uint64_t[(cipher.l + 1) << context.logN]();
     uint64_t* bxmult = new uint64_t[(cipher.l + 1) << context.logN]();
     
@@ -1219,55 +1133,25 @@ Ciphertext ExtScheme::leftRotateFastMT(Ciphertext& cipher, long rotSlots){
     context.leftRot(axres, cipher.ax, cipher.l, rotSlots);
     
     //! Key Switching of a(X^k)
-    NTL_EXEC_RANGE(cipher.l, first, last);
-    for (long i = first; i < last; ++i) {
-        Key keys = decompLeftRotKeyMap.at(make_pair(rotSlots, i));
-        
-        uint64_t* axi = new uint64_t[(cipher.l + 1) << context.logN];
-        rnsDecomp(axi, axres, i, cipher.l);
-        
-        axtmp[i] = new uint64_t[(cipher.l + 1) << context.logN];
-        bxtmp[i] = new uint64_t[(cipher.l + 1) << context.logN];
-        mulDecompKey(axtmp[i], bxtmp[i], axi, keys, cipher.l);
-    }
-    NTL_EXEC_RANGE_END
-    
     for(long i = 0; i < cipher.l; ++i){
-        context.addAndEqual(axmult, axtmp[i], cipher.l, 1);
-        context.addAndEqual(bxmult, bxtmp[i], cipher.l, 1);
+        Key keys = decompLeftRotKeyMap.at(make_pair(rotSlots, i));
+        rnsDecompMT(axi, axres, i, cipher.l);
+        mulDecompKey(axtmp, bxtmp, axi, keys, cipher.l);
+        context.addAndEqual(axmult, axtmp, cipher.l, 1);
+        context.addAndEqual(bxmult, bxtmp, cipher.l, 1);
     }
     
-    
-    //! modDownByp0(axmult, cipher.l);
-    //! modDownByp0(bxmult, cipher.l);
-    
-    uint64_t* al = axmult + (cipher.l << context.logN);
-    uint64_t* bl = bxmult + (cipher.l << context.logN);
-    context.piINTTAndEqual(al, 0);
-    context.piINTTAndEqual(bl, 0);
-    
-    NTL_EXEC_RANGE(cipher.l, first, last);
-    for (long i = first; i < last; ++i) {
-        uint64_t* ai = axmult + (i << context.logN);
-        uint64_t* atmp = new uint64_t[context.N];
-        context.qiNTT(atmp, al, i);
-        context.qiSubAndEqual(ai, atmp, i);
-        context.qiMulConstAndEqual(ai, p0InvModqi[i], i);
-        
-        uint64_t* bi = bxmult + (i << context.logN);
-        uint64_t* btmp = new uint64_t[context.N];
-        context.qiNTT(btmp, bl, i);
-        context.qiSubAndEqual(bi, btmp, i);
-        context.qiMulConstAndEqual(bi, p0InvModqi[i], i);
-    }
-    NTL_EXEC_RANGE_END
+    //! ModDown by pVec[0]
+    modDownByp0MT(axmult, cipher.l);
+    modDownByp0MT(bxmult, cipher.l);
     
     context.addAndEqual(bxres, bxmult, cipher.l);
-
-    delete[] axres;
-    delete[] bxmult;
+    
+    delete[] axi;
     delete[] axtmp;
     delete[] bxtmp;
+    delete[] axres;
+    delete[] bxmult;
     
     return Ciphertext(axmult, bxres, context.N, cipher.slots, cipher.l);
 }
