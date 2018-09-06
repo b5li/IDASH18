@@ -25,7 +25,7 @@ void ExtTestScheme::testBasic(long logN,  long L, long logp, long logSlots){
     cout << "!!! START TEST PROD BATCH !!!" << endl;
     //-----------------------------------------
     TimeUtils timeutils;
-    long K = L;
+    long K = 1;
     Context context(logN, logp, L, K);
     SecretKey secretKey(context);
     Scheme scheme(secretKey, context);
@@ -129,13 +129,14 @@ void ExtTestScheme::testThreeProd(long logN,  long L, long logp, long logSlots){
     cout << "!!! START TEST BASIC !!!" << endl;
     //-----------------------------------------
     TimeUtils timeutils;
-    long K = L + 1;
+    long K = 1;
     Context context(logN, logp, L, K);
     SecretKey secretKey(context);
     Scheme scheme(secretKey, context);
     ExtScheme extscheme(secretKey, context, scheme);
     
-    extscheme.addThreeMultKey(secretKey);   // Ps^3 -> s
+    extscheme.addDecompTwoKeys(secretKey);
+    extscheme.addDecompThreeKeys(secretKey);
     //-----------------------------------------
     srand(time(NULL));
     //-----------------------------------------
@@ -158,37 +159,6 @@ void ExtTestScheme::testThreeProd(long logN,  long L, long logp, long logSlots){
     Ciphertext cipher3 = scheme.encrypt(mvec3, slots, L);
     timeutils.stop("Encrypt two batch");
     
-#if 0
-    //! Naive (c1*c2, *c3)
-    timeutils.start("Homomorphic Multiplication & Rescaling (Naive)");
-    Ciphertext naivemultCipher = scheme.mult(cipher1, cipher2);
-    scheme.multAndEqual(naivemultCipher, cipher3);
-    
-    auto start= chrono::steady_clock::now();
-    scheme.reScaleByAndEqual(naivemultCipher, 2);
-    timeutils.stop("Homomorphic Multiplication & Rescaling");
-    auto end = std::chrono::steady_clock::now();
-    auto diff = end - start;
-    double timeElapsed = chrono::duration <double, milli> (diff).count();
-    cout << "RS time= " << timeElapsed << " ms" << endl;
-#endif
-    //! try1
-    timeutils.start("Homomorphic Multiplication & Rescaling (Three in once)");
-    ExtCiphertext extmultCipher = extscheme.rawmult3(cipher1, cipher2, cipher3);
-    timeutils.stop("Homomorphic Multiplication & Rescaling");
-    
-    Ciphertext multCipher = extscheme.ModRaiseKeySwitch(extmultCipher);
-    scheme.reScaleByAndEqual(multCipher, 2);
-    
-    //! try2
-    timeutils.start("Homomorphic Multiplication & Rescaling (Three in once)");
-    ExtCiphertext extmultCipher0 = extscheme.rawmult3_(cipher1, cipher2, cipher3);
-    timeutils.stop("Homomorphic Multiplication & Rescaling");
-    
-    Ciphertext multCipher0 = extscheme.ModRaiseKeySwitch(extmultCipher0);
-    scheme.reScaleByAndEqual(multCipher0, 2);
-    
-    //! try3
     timeutils.start("Homomorphic Multiplication & Rescaling (two and one)");
     ExtCiphertext extmultCipher1 = extscheme.rawmult(cipher1, cipher2);
     ExtCiphertext extmultCipher2 = extscheme.rawmult(extmultCipher1, cipher3);
@@ -196,30 +166,40 @@ void ExtTestScheme::testThreeProd(long logN,  long L, long logp, long logSlots){
     
     
     timeutils.start("Homomorphic Key Switching (s^3)");
-    Ciphertext multCipher1 = extscheme.ModRaiseKeySwitch(extmultCipher2);
+    Ciphertext multCipher1 = extscheme.DecompKeySwitch(extmultCipher2);
     timeutils.stop("Homomorphic Key Switching");
     
     scheme.reScaleByAndEqual(multCipher1, 2);
     
-
+    timeutils.start("Homomorphic Multiplication & Rescaling (two and one)");
+    ExtCiphertext extmultCipher3 = extscheme.rawmult3(cipher1, cipher2, cipher3);
+    timeutils.stop("Homomorphic Multiplication & Rescaling");
+    
+    
+    timeutils.start("Homomorphic Key Switching (s^3)");
+    Ciphertext multCipher2 = extscheme.DecompKeySwitch(extmultCipher3);
+    timeutils.stop("Homomorphic Key Switching");
+    
+    scheme.reScaleByAndEqual(multCipher2, 2);
+    
     timeutils.start("Homomorphic Square");
     ExtCiphertext extsqrCiphext = extscheme.rawsquare(cipher1);
     timeutils.stop("Homomorphic Square");
     
-    
-    Ciphertext sqrCipher = extscheme.ModRaiseKeySwitch(extsqrCiphext);
+    Ciphertext sqrCipher = extscheme.DecompKeySwitch(extsqrCiphext);
     scheme.reScaleByAndEqual(sqrCipher, 1);
     
-    //complex<double>* dvecMultNaive = scheme.decrypt(secretKey, naivemultCipher);
-    complex<double>* dvecMult = scheme.decrypt(secretKey, multCipher);
-    complex<double>* dvecMult0 = scheme.decrypt(secretKey, multCipher0);
+    
+    
+    
     complex<double>* dvecMult1 = scheme.decrypt(secretKey, multCipher1);
+    complex<double>* dvecMult2 = scheme.decrypt(secretKey, multCipher2);
     complex<double>* dvecSqr = scheme.decrypt(secretKey, sqrCipher);
 
     //StringUtils::showcompare(mvecMult, dvecMultNaive, slots, "naivemult");
-    StringUtils::showcompare(mvecMult, dvecMult, slots, "raw0");
-    StringUtils::showcompare(mvecMult, dvecMult0, slots, "raw1");
+    
     StringUtils::showcompare(mvecMult, dvecMult1, slots, "two/one");
+    StringUtils::showcompare(mvecMult, dvecMult2, slots, "rawmul3");
     StringUtils::showcompare(mvecSqr,  dvecSqr, slots, "sqr");
 }
 
@@ -284,13 +264,36 @@ void ExtTestScheme::testDecompKS(long logN,  long L, long logp, long logSlots){
     dvecMult1 = scheme.decrypt(secretKey, multCipher2);
     StringUtils::showcompare(mvecMult1, dvecMult1, slots, "raw0");
     
-    timeutils.start("Homomorphic Multiplication (AndEqual) ");
-    extscheme.multAndEqual(cipher1, cipher2);
+    //------------------------------------------------------/
+    timeutils.start("Homomorphic Multiplication Multi-threading");
+    Ciphertext multCipher2MT = extscheme.multMT(cipher1, cipher2);
     timeutils.stop("Homomorphic Multiplication");
-    scheme.reScaleByAndEqual(cipher1, 1);
+    scheme.reScaleByAndEqual(multCipher2MT, 1);
     
-    dvecMult1 = scheme.decrypt(secretKey, cipher1);
+    dvecMult1 = scheme.decrypt(secretKey, multCipher2MT);
     StringUtils::showcompare(mvecMult1, dvecMult1, slots, "raw0");
+    
+    //------------------------------------------------------/
+    timeutils.start("Homomorphic Multiplication (AndEqual) ");
+    Ciphertext ctmp = cipher1;
+    extscheme.multAndEqual(ctmp, cipher2);
+    timeutils.stop("Homomorphic Multiplication");
+    scheme.reScaleByAndEqual(ctmp, 1);
+    
+    dvecMult1 = scheme.decrypt(secretKey, ctmp);
+    StringUtils::showcompare(mvecMult1, dvecMult1, slots, "raw0");
+
+
+    timeutils.start("Homomorphic Multiplication (AndEqual) Multi-threading ");
+    ctmp = cipher1;
+    extscheme.multAndEqualMT(ctmp, cipher2);
+    timeutils.stop("Homomorphic Multiplication");
+    scheme.reScaleByAndEqual(ctmp, 1);
+    
+    dvecMult1 = scheme.decrypt(secretKey, ctmp);
+    StringUtils::showcompare(mvecMult1, dvecMult1, slots, "raw0");
+    
+    //------------------------------------------------------/
     
     timeutils.start("Homomorphic Key Switching (s^2 & s^3)");
     Ciphertext multCipher3 = extscheme.DecompKeySwitch(extmultCipher2);
@@ -299,6 +302,16 @@ void ExtTestScheme::testDecompKS(long logN,  long L, long logp, long logSlots){
     scheme.reScaleByAndEqual(multCipher3, 2);
     
     complex<double>* dvecMult2 = scheme.decrypt(secretKey, multCipher3);
+    StringUtils::showcompare(mvecMult2, dvecMult2, slots, "raw0");
+
+    
+    timeutils.start("Homomorphic Key Switching (s^2 & s^3) Multi-threading");
+    Ciphertext multCipher4 = extscheme.DecompKeySwitchMT(extmultCipher2);
+    timeutils.stop("Homomorphic Key Switching");
+    
+    scheme.reScaleByAndEqual(multCipher4, 2);
+    
+    dvecMult2 = scheme.decrypt(secretKey, multCipher4);
     StringUtils::showcompare(mvecMult2, dvecMult2, slots, "raw0");
 }
 
@@ -408,7 +421,7 @@ void ExtTestScheme::testDecompRotate(long logN,  long L, long logRotSlots, long 
     EvaluatorUtils::leftRotateAndEqual(mvec5, slots, RotSlots2);
     StringUtils::showcompare(mvec5, dvec, slots, "mul/rot");
 #endif
-#if 1
+
     /**********************************************************/
     timeutils.start("Homomorphic Left Rotation Fast");
     long RotSlots1 = (1 << logRotSlots);
@@ -420,7 +433,16 @@ void ExtTestScheme::testDecompRotate(long logN,  long L, long logRotSlots, long 
     EvaluatorUtils::leftRotateAndEqual(mvec1, slots, RotSlots1);
     StringUtils::showcompare(mvec1, dvec1, slots, "rot");
 
- 
+    timeutils.start("Homomorphic Left Rotation Fast Multi-threading");
+    rotcipher1 = extscheme.leftRotateFastMT(cipher, RotSlots1);
+    timeutils.stop("Homomorphic Left Rotation Fast Multi-threading");
+    
+    dvec1 = scheme.decrypt(secretKey, rotcipher1);
+    
+    EvaluatorUtils::leftRotateAndEqual(mvec1, slots, RotSlots1);
+    StringUtils::showcompare(mvec1, dvec1, slots, "rot");
+
+ #if 0
     timeutils.start("Homomorphic Left Rotation (PoT)");
     rotcipher1 = extscheme.leftRotateByPo2(cipher, logRotSlots);
     timeutils.stop("Homomorphic Left Rotation (PoT)");
@@ -438,7 +460,7 @@ void ExtTestScheme::testDecompRotate(long logN,  long L, long logRotSlots, long 
     
     EvaluatorUtils::leftRotateAndEqual(mvec2, slots, RotSlots);
     StringUtils::showcompare(mvec2, dvec2, slots, "rot");
-#endif
+
     
     /**********************************************************/
     timeutils.start("Homomorphic Right Rotation Fast");
@@ -469,7 +491,7 @@ void ExtTestScheme::testDecompRotate(long logN,  long L, long logRotSlots, long 
     
     EvaluatorUtils::rightRotateAndEqual(mvec4, slots, RotSlots);
     StringUtils::showcompare(mvec4, dvec2, slots, "rot");
- 
+#endif
 }
  
 

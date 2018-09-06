@@ -124,6 +124,9 @@ public:
     
     /********************************************************************/
     //! Multi-threading version
+    void rnsDecompMT(uint64_t*& res, uint64_t* a, long i, long l);
+    void modDownByp0MT(uint64_t*& a, long l);
+    
     Ciphertext DecompKeySwitchMT(ExtCiphertext& cipher);
     
     Ciphertext multMT(Ciphertext& cipher1, Ciphertext& cipher2);
