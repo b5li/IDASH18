@@ -103,6 +103,7 @@ public:
     Ciphertext rightRotateFast(Ciphertext& cipher, long rotSlots);
     Ciphertext rightRotateByPo2(Ciphertext& cipher, long logRotSlots);
     Ciphertext rightRotate(Ciphertext& cipher, long logRotSlots);
+
     
     /********************************************************************/
     void reScaleByAndEqual(ExtCiphertext& cipher, long dl);
@@ -120,6 +121,20 @@ public:
     
     Ciphertext mult(Ciphertext& cipher1, Ciphertext& cipher2);
     void multAndEqual(Ciphertext& cipher1, Ciphertext& cipher2);
+    
+    /********************************************************************/
+    //! Multi-threading version
+    Ciphertext DecompKeySwitchMT(ExtCiphertext& cipher);
+    
+    Ciphertext multMT(Ciphertext& cipher1, Ciphertext& cipher2);
+    void multAndEqualMT(Ciphertext& cipher1, Ciphertext& cipher2);
+    Ciphertext squareMT(Ciphertext& cipher);
+    void squareAndEqualMT(Ciphertext& cipher);
+    void reScaleByAndEqualMT(ExtCiphertext& cipher, long dl);
+    
+    Ciphertext leftRotateFastMT(Ciphertext& cipher, long rotSlots);
+    Ciphertext rightRotateFastMT(Ciphertext& cipher, long rotSlots);
+    
 };
 
 #endif
