@@ -42,64 +42,74 @@ Error (TP, FP, FN, TN) of pt/ct : 1,0.00588941,0,0.994111
 g++ -std=c++11 -O2 -I/usr/local/include -pthread mainLogReg.cpp libHEGWAS.a -o foo -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
 /usr/bin/time ./foo "idashdata/covariates.txt" "idashdata/snpMat.txt" 
 
-+------------------------------------+
+ +------------------------------------+
 |    1. Read the covariates & SNP    |
 +------------------------------------+
 (sampleDim, factorDim, nsnp): (245,4,10643)
-(logN,logp,L,K,logQ,h) = (15,43,24,1,1103,256)
+(logN,logp,L,K,logQ,h) = (15,43,23,1,1060,170)
 (dim,nslots,nbatching,nencsnp,subblock) = (4,16384,16,1,16)
 +------------------------------------+
 |           Key Generation           |
 +------------------------------------+
-Scheme generation time= 55.9309 s
-Memory Usage : 5.62055(GB)
+Scheme generation time = 46.6366 s
+Memory Usage : 5.19108(GB)
 +------------------------------------+
 |             Encryption             |
 +------------------------------------+
-Encryption time (X and snp) = 26.603 s
-Memory Usage : 8.63425(GB)
+Encryption time (X and snp) = 26.0755 s
+Memory Usage : 8.203(GB)
 +------------------------------------+
 |             Evaluation             |
 +------------------------------------+
-1. Logistic regression = 90.5155 s
-Memory Usage : 9.13587(GB)
-2. Update the weights = 15.0747 s
-Memory Usage : 9.23119(GB)
-Memory Usage (1) : 9.94342(GB)
-Memory Usage (2) : 10.0492(GB)
-3.1. (X^T * W *  X)^-1 = 20.9114 s
-Memory Usage : 10.0774(GB)
-3.2. Z^T * X   = 1.6594 s
-3.3. S^T * X  = 0.43325 s
-Memory Usage : 10.1085(GB)
-3.4.0. genpoly = 0.323266 s
-3.4. Enc(Z^T * W * S) = 26.5849 s
-Memory Usage : 12.0595(GB)
-3.5.  Enc(S^T * W * S)   = 26.6758 s
-Memory Usage : 14.0707(GB)
-3.6. Enc(X^T * W2 * S)  = 31.7035 s
-Memory Usage : 15.0056(GB)
+1. Logistic regression = 67.3867 s
+Memory Usage : 8.67994(GB)
+[0.106453,0.0219845,0.0211884,0.0467032]
+------------------------
+2. Update the weights = 9.90826 s
+Memory Usage : 8.73869(GB)
+------------------------
+3.1. (X^T * W *  X)^-1 = 17.4511 s
+Memory Usage : 9.52205(GB)
+------------------------
+3
+1/(s^3) * Adj: [0.422819, -0.316995, -0.189263, -0.439001, 0.819314, -0.00200635, 0.0260262, 1.43201, -0.758553, 1.49826, ] 
+1/(s^3) * det: 1.16008 ?= 1.16016
+3.2. Z^T * X   = 1.39938 s
+------------------------
+3.3. S^T * X  = 0.435946 s
+Memory Usage : 9.53463(GB)
+------------------------
+3.4.0. genpoly = 0.315038 s
+------------------------
+3.4. Enc(Z^T * W * S) = 22.3368 s
+Memory Usage : 11.3434(GB)
+------------------------
+3.5.  Enc(S^T * W * S)   = 22.4488 s
+Memory Usage : 13.173(GB)
+------------------------
+3.6. Enc(X^T * W2 * S)  = 24.7818 s
+Memory Usage : 14.9754(GB)
+------------------------
+2,2,2
 ---------------
-Z^T * W ^ S : [-0.486036,-0.486253,-0.486585,-0.456848,-7.11445,-4.22927,-16.7035,-0.971366,-0.485829,-0.395233,]
+Z^T * W ^ S : [-0.486036,-0.486253,-0.486585,-0.456848,-7.11445,-4.22926,-16.7035,-0.971366,-0.485829,-0.395232,]
 ---------------
-Z^T * W ^ S : [0.249556,0.24957,0.249591,0.748586,6.73737,4.74115,13.7236,0.499066,0.249543,1.74642,]
+S^T * W ^ S : [0.249557,0.24957,0.249591,0.748587,6.73738,4.74116,13.7236,0.499067,0.249543,1.74642,]
 ---------------
-S^T * W ^ S : [0.249556,0.24957,0.249591,0.748586,6.73737,4.74115,13.7236,0.499066,0.249543,1.74642,]
+X^T * W2 ^ S : [0.0622784,0.0622852,0.0622956,0.186794,1.68119,1.18308,3.4243,0.124534,0.0622716,0.435712,]
 ---------------
-X^T * W2 ^ S : [0.0622783,0.0622851,0.0622955,0.186794,1.68119,1.18308,3.4243,0.124533,0.0622715,0.435712,]
----------------
-4. Norm = 0.866106 s
+4. Norm = 0.744688 s
 logq: 1,1
-Total Evaluation Timing = 214.748 s
-Memory Usage : 15.0056(GB)
+Total Evaluation Timing = 167.208 s
+Memory Usage : 14.9754(GB)
 +------------------------------------+
 |             Decryption             |
 +------------------------------------+
-Decryption time = 0.024987 s
+Decryption time = 0.0209503 s
 +------------------------------------+
 |          2. Quality Check          |
 +------------------------------------+
-Error (TP, FP, FN, TN) of pt/ct : 1,0.00523846,0,0.994762
-652.14user 25.75system 4:59.83elapsed 226%CPU (0avgtext+0avgdata 15734540maxresident)k
-370728inputs+1088outputs (4904major+3447978minor)pagefaults 0swaps
+Error (TP, FP, FN, TN) of pt/ct : 1,0.00415164,0,0.995848
+541.98user 25.55system 4:01.66elapsed 234%CPU (0avgtext+0avgdata 15702872maxresident)k
+37904inputs+752outputs (185major+3089753minor)pagefaults 0swaps
 
