@@ -25,6 +25,7 @@ docker push idash18ucsd/helinreg
 1. Install the docker software
 
 ..* on Ubuntu/Debian, do `apt-get install docker`
+..* on Arch Linux, do `pacman -S docker` and then `systemctl start docker.service`
 ..* on Mac, the docker software can be downloaded here <https://store.docker.com/editions/community/docker-ce-desktop-mac>
 
 2. Now we can pull the uploaded docker image (on linux we must use `sudo docker ...` but on Mac we can just do `docker ...` with regular user account):
