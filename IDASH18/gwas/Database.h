@@ -34,7 +34,7 @@ void ListsData(double**& sData, long& nsnp, long& sampleDim, vector<vector<strin
 
 void normalizeData(double**& Data, double** zData, long factorDim, long sampleDim);
 
-
+/******************************************************/
 void printvector(double* vec, const long k = 0);
 
 void printvectorToFile(double* vec, string filename, const long k = 0);
@@ -44,6 +44,8 @@ void printRvectorToFile(vec_RR& vec, string filename, const long k = 0);
 void printRvectorToFile1(vec_RR& vec, string filename, const long k = 0);
 
 void printRmatrixToFile(Mat<RR>& mat, string filename, const long k = 0);
+
+void printPvalsToFile(double* vec, vector<string> snptag, string filename, const long k = 0);
 
 #define Error "\033[5;31mError:\033[0m"
 
