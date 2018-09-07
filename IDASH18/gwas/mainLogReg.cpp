@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
     long testsigdeg = 7;
 
     
-    TestHELRPvals::testHELogReg(zScore, pVals, yData, xData, sData, factorDim, sampleDim, nsnp, snptag, "LogRegResult/HE_Pvals.txt");
+    TestHELRPvals::testHELogReg(zScore, pVals, yData, xData, sData, factorDim, sampleDim, nsnp, snptag, "LogRegResult/HELogReg_Pvals.txt");
    
     //TestHELRPvals::testHELogReg_accuracy(zScore, pVals, yData, xData, sData, factorDim, sampleDim, nsnp, numIter, testsigdeg, snptag, "LogRegResult/HE_Pvals_deg7.txt");
     //TestLRPvals::testLogRegGD(zScore, pVals, yData, xData, sData, factorDim, sampleDim, nsnp, 3, testsigdeg, numIter, 10,  1, "LogRegResult/Plain_Pvals_deg3.txt"); //! plain comp
