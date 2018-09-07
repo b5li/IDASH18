@@ -370,4 +370,14 @@ void printRmatrix(Mat<RR>& mat, string filename, const long k){
     outf.close();
 }
 
+void printPvalsToFile(double* vec, vector<string> snptag, string filename, const long k){
+    fstream outf;
+    outf.open(filename.c_str(), fstream::in | fstream::out | fstream::app);   /// open the file
+    
+    for(int i = 0; i< k; ++i){
+        outf << snptag[i] << "\t" << vec[i]  << endl;
+    }
+    
+    outf.close();
+}
 
