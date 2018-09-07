@@ -7,7 +7,7 @@
 PREFIX = $(HOME)
 CC = g++
 AR = ar
-CFLAGS= -O2 -std=c++11 -pthread $(TPFLAGS)
+CFLAGS= -O3 -std=c++11 -pthread $(TPFLAGS)
 
 # path to the library files
 LDLIBS  = -L/usr/local/lib -lntl -lgmp -lm
@@ -52,11 +52,11 @@ new:
 ###############################################################
 
 testlinreg:
-	g++ -std=c++11 -O2 -I/usr/local/include $(TPFLAGS) -pthread mainLinReg.cpp  libHEGWAS.a -o foo -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
+	g++ -std=c++11 -O3 -I/usr/local/include $(TPFLAGS) -pthread mainLinReg.cpp  libHEGWAS.a -o foo -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
 	 /usr/bin/time ./foo "idashdata/covariates.txt" "idashdata/snpMat.txt"
 
 testlogreg:
-	g++ -std=c++11 -O2 -I/usr/local/include $(TPFLAGS) -pthread mainLogReg.cpp  libHEGWAS.a -o foo -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
+	g++ -std=c++11 -O3 -I/usr/local/include $(TPFLAGS) -pthread mainLogReg.cpp  libHEGWAS.a -o foo -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
 	 /usr/bin/time ./foo "idashdata/covariates.txt" "idashdata/snpMat.txt"
 
 obj: $(OBJ)
