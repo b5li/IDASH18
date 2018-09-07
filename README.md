@@ -24,20 +24,20 @@ docker push idash18ucsd/helinreg
 
 1. Install the docker software
 
-..* on Ubuntu/Debian, do `apt-get install docker`
-..* on Arch Linux, do `pacman -S docker` and then `systemctl start docker.service`
-..* on Mac, the docker software can be downloaded here <https://store.docker.com/editions/community/docker-ce-desktop-mac>
+* on Ubuntu/Debian, do `apt-get install docker`
+* on Arch Linux, do `pacman -S docker` and then `systemctl start docker.service`
+* on Mac, the docker software can be downloaded here <https://store.docker.com/editions/community/docker-ce-desktop-mac>
 
 2. Now we can pull the uploaded docker image (on linux we must use `sudo docker ...` but on Mac we can just do `docker ...` with regular user account):
 
-..* To pull and run the docker image for linear regression:
+* To pull and run the docker image for linear regression:
 ```
 sudo docker pull idash18ucsd/helinreg
 
 sudo docker run -it --rm idash18ucsd/helinreg
 ```
 
-..* To pull and run the docker image for logistic regression:
+* To pull and run the docker image for logistic regression:
 ```
 sudo docker pull idash18ucsd/helogreg
 
