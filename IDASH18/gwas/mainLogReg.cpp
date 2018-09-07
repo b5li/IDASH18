@@ -72,15 +72,16 @@ int main(int argc, char **argv) {
     double* zScore = new double[nsnp];
     double* pVals = new double[nsnp];
     
-    long testsigdeg = 3;
-    long numIter = 3;
+    long numIter = 4;   //! iteration of NLGD
+    long testsigdeg = 7;
 
-    //TestLRPvals::testLogRegGD(zScore, pVals, yData, xData, sData, factorDim, sampleDim, nsnp, 3, testsigdeg, numIter, 1,  1, "LogRegResult/Plain_Pvals_deg3.txt");
-    TestHELRPvals::testHELogReg(zScore, pVals, yData, xData, sData, factorDim, sampleDim, nsnp, "LogRegResult/HE_Pvals.txt");
-    //TestHELRPvals::testHELogReg_accuracy(zScore, pVals, yData, xData, sData, factorDim, sampleDim, nsnp, numIter, testsigdeg, "LogRegResult/HE_Pvals_deg7.txt");
     
-    //TestHELRPvals::testHELogReg_block8(zScore_ct, pVals, yData, xData, sData, factorDim, sampleDim, nsnp, "LogRegResult/HE_Pvals.txt");
-#if 1
+    TestHELRPvals::testHELogReg(zScore, pVals, yData, xData, sData, factorDim, sampleDim, nsnp, snptag, "LogRegResult/HE_Pvals.txt");
+   
+    //TestHELRPvals::testHELogReg_accuracy(zScore, pVals, yData, xData, sData, factorDim, sampleDim, nsnp, numIter, testsigdeg, snptag, "LogRegResult/HE_Pvals_deg7.txt");
+    //TestLRPvals::testLogRegGD(zScore, pVals, yData, xData, sData, factorDim, sampleDim, nsnp, 3, testsigdeg, numIter, 10,  1, "LogRegResult/Plain_Pvals_deg3.txt"); //! plain comp
+    
+ 
     cout << "+------------------------------------+" << endl;
     cout << "|          2. Quality Check          |" << endl;
     cout << "+------------------------------------+" << endl;
@@ -92,6 +93,6 @@ int main(int argc, char **argv) {
     double TP, FP, FN, TN;
     pvalsError(TP, FP, FN, TN, pVals, pVals_pt, nsnp, siglevel);
     cout << "Error (TP, FP, FN, TN) of pt/ct : " << TP << "," <<  FP << ","  << FN << "," << TN << endl;
-#endif
+ 
 	return 0;
 }

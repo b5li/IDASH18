@@ -41,7 +41,7 @@
 //!@ XData: fully packed in a single ciphertext
 //!@ Function: using decomposition KS -> logN = 13
 
-void TestHEPvals::testFastHELinReg(double*& zScore, double*& pVals, double* yData, double** xData, double** sData, long factorDim, long sampleDim, long nsnp,  string filename){
+void TestHEPvals::testFastHELinReg(double*& zScore, double*& pVals, double* yData, double** xData, double** sData, long factorDim, long sampleDim, long nsnp, vector<string> snptag, string filename){
     
     struct rusage usage;
     long memoryscale = (1 << 20);
@@ -141,6 +141,14 @@ void TestHEPvals::testFastHELinReg(double*& zScore, double*& pVals, double* yDat
     ret = getrusage(RUSAGE_SELF, &usage);
     cout<< "Memory Usage : " << (double) usage.ru_maxrss/(memoryscale)  << "(GB)" << endl;
     
+    //! MB
+    double sizeYX = 1 * 2 * (logq0 + (YXlvl - 1) * logp) * (1 << logN) / (1 << 23);
+    double sizecov = 34 * 2 * (logq0 + (Covlvl - 1) * logp) * (1 << logN) / (1 << 23);
+    double sizeS = sampleDim * nencsnp * 2 * (logq0 + (Slvl - 1) * logp) * (1 << logN) / (1 << 23);
+    double sizeYS = sampleDim * nencsnp * 2 * (logq0 + (YSlvl - 1) * logp) * (1 << logN) / (1 << 23);
+    double sizeSX = sampleDim * nencsnp * factorDim * 2 * (logq0 + (Slvl - 1) * logp) * (1 << logN) / (1 << 23);
+    cout << "Freshly Ciphertexts size: " << (sizeYX + sizecov + sizeS + sizeYS + sizeSX) << "(MB)" << endl;
+    
     cout << "+------------------------------------+" << endl;
     cout << "|             Evaluation             |" << endl;
     cout << "+------------------------------------+" << endl;
@@ -220,12 +228,11 @@ void TestHEPvals::testFastHELinReg(double*& zScore, double*& pVals, double* yDat
     
 
     Ciphertext encWtYX;
-    cipherPvals.extSqrQuadForm(encWtYX, encYX, encAdj, factorDim);     //! L - 3
+    cipherPvals.extSqrQuadForm(encWtYX, encYX, encAdj, factorDim);              //! L - 3 = 1
     
-    Ciphertext encYnorm = scheme.multByConst(encDet, (double) sampleDim);       //! L - 1
-    scheme.reScaleByAndEqual(encYnorm, 1);
+    Ciphertext encYnorm = extscheme.multByConstMT(encDet, (long) sampleDim);     //! L - 2 = 2
     
-    scheme.modDownToAndEqual(encWtYX, encYnorm.l);
+    scheme.modDownToAndEqual(encYnorm, encWtYX.l);
     scheme.subAndEqual(encYnorm, encWtYX);
     
 #if defined(__DEBUG_)
@@ -332,7 +339,8 @@ void TestHEPvals::testFastHELinReg(double*& zScore, double*& pVals, double* yDat
     
     printvectorToFile(YSnorm1, "LinRegResult/FastHELinReg_YSnorm.txt", nsnp);
     printvectorToFile(Snorm1, "LinRegResult/FastHELinReg_Snorm.txt", nsnp);
-    printvectorToFile(pVals, filename, nsnp);
+    //printvectorToFile(pVals, filename, nsnp);
+    printPvalsToFile(pVals, snptag, filename, nsnp);
     
     delete[] encYS;
     delete[] encS;

@@ -14,8 +14,6 @@
 #include "TestLinRegPvals.h"
 #include "TestHELinRegPvals.h"
 
-#include "sys.h"
-
 using namespace std;
 using namespace NTL;
 
@@ -75,7 +73,7 @@ int main(int argc, char **argv) {
     double* zScore_ct;
     double* pVals_ct;
  
-    TestHEPvals::testFastHELinReg(zScore_ct, pVals_ct, yData, xData, sData, factorDim, sampleDim, nsnp, "LinRegResult/FastHELinReg_Pvals.txt");
+    TestHEPvals::testFastHELinReg(zScore_ct, pVals_ct, yData, xData, sData, factorDim, sampleDim, nsnp, snptag, "LinRegResult/FastHELinReg_Pvals.txt");
  
     cout << "+------------------------------------+" << endl;
     cout << "|            Quality Check           |" << endl;
@@ -90,10 +88,8 @@ int main(int argc, char **argv) {
     pvalsError(TP, FP, FN, TN, pVals_ct, pVals_pt, nsnp, siglevel);
     
     cout << "Error (TP, FP, FN, TN) of pt/ct : " << TP << "," <<  FP << ","  << FN << "," << TN << endl;
-
-    cout << "+------------------------------------+" << endl;
-    cout << "|            Memory Check            |" << endl;
-    cout << "+------------------------------------+" << endl;
+    
+    
     //MemoryUsage mem = getMemoryUsage();
     //cout << "Peak memory = " << mem.vmpeak/1024 << "KB" << std::endl;
     //cout << "Curr memory = " << mem.vmrss/1024  << "KB" << std::endl;
