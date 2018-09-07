@@ -35,7 +35,8 @@ WORKDIR IDASH18
 WORKDIR gwas
 RUN make clean
 RUN make all
-RUN make testlogreg
-RUN cp testlogreg /usr/bin/testlogreg
+RUN make testlinreg
+RUN cp testlinreg /usr/bin/testlinreg
 
+# CMD ["/usr/src/IDASH18/gwas/foo","idashdata/covariates.txt","idashdata/snpMat.txt"]
 

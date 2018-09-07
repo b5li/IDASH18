@@ -39,7 +39,7 @@ OBJ= $(SRC:.cpp=.o)
 all: libHEGWAS.a
 
 clean:
-	rm *.o libHEGWAS.a  || echo nothing to clean
+	rm -f *.o libHEGWAS.a testlinreg testlogreg || echo nothing to clean
 	
 new:
 	make clean
@@ -52,12 +52,12 @@ new:
 ###############################################################
 
 testlinreg:
-	g++ -std=c++11 -O3 -I/usr/local/include $(TPFLAGS) -pthread mainLinReg.cpp  libHEGWAS.a -o foo -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
-	 /usr/bin/time ./foo "idashdata/covariates.txt" "idashdata/snpMat.txt"
+	g++ -std=c++11 -O3 -I/usr/local/include $(TPFLAGS) -pthread mainLinReg.cpp  libHEGWAS.a -o testlinreg -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
+	/usr/bin/time ./testlinreg "idashdata/covariates.txt" "idashdata/snpMat.txt"
 
 testlogreg:
-	g++ -std=c++11 -O3 -I/usr/local/include $(TPFLAGS) -pthread mainLogReg.cpp  libHEGWAS.a -o foo -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
-	 /usr/bin/time ./foo "idashdata/covariates.txt" "idashdata/snpMat.txt"
+	g++ -std=c++11 -O3 -I/usr/local/include $(TPFLAGS) -pthread mainLogReg.cpp  libHEGWAS.a -o testlogreg -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
+	/usr/bin/time ./testlogreg "idashdata/covariates.txt" "idashdata/snpMat.txt"
 
 obj: $(OBJ)
 
