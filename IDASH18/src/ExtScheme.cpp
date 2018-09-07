@@ -297,19 +297,6 @@ void ExtScheme::reScaleByAndEqual(ExtCiphertext& cipher, long dl) {
     }
 }
 
-void ExtScheme::reScaleByAndEqualMT(ExtCiphertext& cipher, long dl) {
-    for (long i = 0; i < dl; ++i) {
-        context.reScaleAndEqual(cipher.bx, cipher.l);
-        
-        NTL_EXEC_RANGE(cipher.deg, first, last);
-        for(long j = first; j< last; ++j){
-            context.reScaleAndEqual(cipher.ax[j], cipher.l);
-        }
-        NTL_EXEC_RANGE_END;
-        cipher.l -= 1;
-    }
-}
-
 void ExtScheme::reScaleToAndEqual(ExtCiphertext& cipher, long l) {
     long dl = cipher.l - l;
     reScaleByAndEqual(cipher, dl);
@@ -944,6 +931,36 @@ void ExtScheme::rnsDecompMT(uint64_t*& res, uint64_t* a, long i, long l){
     delete[] ai;
 }
 
+void ExtScheme::mulConstMT(uint64_t* res, uint64_t* a, uint64_t cnst, long l, long k) {
+    NTL_EXEC_RANGE(l, first, last);
+    for (long i = first; i < last; ++i) {
+        uint64_t* ai = a + (i << context.logN);
+        uint64_t* resi = res + (i << context.logN);
+        context.qiMulConst(resi, ai, cnst, i);
+    }
+    NTL_EXEC_RANGE_END
+    
+    for (long i = l; i < l + k; ++i) {
+        uint64_t* ai = a + (i << context.logN);
+        uint64_t* resi = res + (i << context.logN);
+        context.piMulConst(resi, ai, cnst, i - l);
+    }
+}
+
+void ExtScheme::mulConstAndEqualMT(uint64_t* a, uint64_t cnst, long l, long k) {
+    NTL_EXEC_RANGE(l, first, last);
+    for (long i = first; i < last; ++i) {
+        uint64_t* ai = a + (i << context.logN);
+        context.qiMulConstAndEqual(ai, cnst, i);
+    }
+    NTL_EXEC_RANGE_END
+    
+    for (long i = l; i < l + k; ++i) {
+        uint64_t* ai = a + (i << context.logN);
+        context.piMulConstAndEqual(ai, cnst, i - l);
+    }
+}
+
 void ExtScheme::mulMT(uint64_t* res, uint64_t* a, uint64_t* b, long l, long k) {
     NTL_EXEC_RANGE(l, first, last);
     for (long i = first; i < last; ++i) {
@@ -1114,6 +1131,75 @@ Ciphertext ExtScheme::DecompKeySwitchMT(ExtCiphertext& cipher) {
     return Ciphertext(axres, bxres, context.N, cipher.slots, cipher.l);
 }
 
+//! Input: cnst
+//! OUtput: Enc(cnxt * m)
+
+Ciphertext ExtScheme::multByConstMT(Ciphertext& cipher, long cnst) {
+    uint64_t tmpr = abs(cnst);
+    
+    uint64_t* ax = new uint64_t[cipher.l << context.logN]();
+    uint64_t* bx = new uint64_t[cipher.l << context.logN]();
+    
+    mulConstMT(ax, cipher.ax, tmpr, cipher.l);
+    mulConstMT(bx, cipher.bx, tmpr, cipher.l);
+    
+    if(cnst < 0) {
+        context.negateAndEqual(ax, cipher.l);
+        context.negateAndEqual(bx, cipher.l);
+    }
+    return Ciphertext(ax, bx, context.N, cipher.slots, cipher.l);
+}
+
+void ExtScheme::multByConstAndEqualMT(Ciphertext& cipher, long cnst) {
+    uint64_t tmpr = abs(cnst);
+    
+    uint64_t* ax = new uint64_t[cipher.l << context.logN]();
+    uint64_t* bx = new uint64_t[cipher.l << context.logN]();
+    
+    mulConstAndEqualMT(cipher.ax, tmpr, cipher.l);
+    mulConstAndEqualMT(cipher.bx, tmpr, cipher.l);
+    
+    if(cnst < 0) {
+        context.negateAndEqual(cipher.ax, cipher.l);
+        context.negateAndEqual(cipher.bx, cipher.l);
+    }
+}
+
+Ciphertext ExtScheme::multByConstMT(Ciphertext& cipher, double cnst) {
+    uint64_t tmpr = abs(cnst) * context.p;
+    
+    uint64_t* ax = new uint64_t[cipher.l << context.logN]();
+    uint64_t* bx = new uint64_t[cipher.l << context.logN]();
+    
+    mulConstMT(ax, cipher.ax, tmpr, cipher.l);
+    mulConstMT(bx, cipher.bx, tmpr, cipher.l);
+    
+    if(cnst < 0) {
+        context.negateAndEqual(ax, cipher.l);
+        context.negateAndEqual(bx, cipher.l);
+    }
+    return Ciphertext(ax, bx, context.N, cipher.slots, cipher.l);
+}
+
+void ExtScheme::multByConstAndEqualMT(Ciphertext& cipher, double cnst) {
+    uint64_t tmpr = abs(cnst) * context.p;
+    
+    uint64_t* ax = new uint64_t[cipher.l << context.logN]();
+    uint64_t* bx = new uint64_t[cipher.l << context.logN]();
+    
+    mulConstAndEqualMT(cipher.ax, tmpr, cipher.l);
+    mulConstAndEqualMT(cipher.bx, tmpr, cipher.l);
+    
+    if(cnst < 0) {
+        context.negateAndEqual(cipher.ax, cipher.l);
+        context.negateAndEqual(cipher.bx, cipher.l);
+    }
+}
+
+void ExtScheme::multByPolyAndEqualMT(Ciphertext& cipher, uint64_t* poly) {
+    mulAndEqualMT(cipher.ax, poly, cipher.l);
+    mulAndEqualMT(cipher.bx, poly, cipher.l);
+}
 
 //! raw multiplication + decomposition KS
 Ciphertext ExtScheme::multMT(Ciphertext& cipher1, Ciphertext& cipher2){
@@ -1291,4 +1377,17 @@ Ciphertext ExtScheme::squareMT(Ciphertext& cipher){
 void ExtScheme::squareAndEqualMT(Ciphertext& cipher){
     ExtCiphertext extcipher = rawsquareMT(cipher);
     cipher = DecompKeySwitchMT(extcipher);
+}
+
+void ExtScheme::reScaleByAndEqualMT(ExtCiphertext& cipher, long dl) {
+    for (long i = 0; i < dl; ++i) {
+        context.reScaleAndEqual(cipher.bx, cipher.l);
+        
+        NTL_EXEC_RANGE(cipher.deg, first, last);
+        for(long j = first; j< last; ++j){
+            context.reScaleAndEqual(cipher.ax[j], cipher.l);
+        }
+        NTL_EXEC_RANGE_END;
+        cipher.l -= 1;
+    }
 }

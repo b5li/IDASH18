@@ -124,6 +124,8 @@ public:
     
     /********************************************************************/
     //! Multi-threading version
+    void mulConstMT(uint64_t* res, uint64_t* a, uint64_t cnst, long l, long k = 0);
+    void mulConstAndEqualMT(uint64_t* a, uint64_t cnst, long l, long k = 0);
     void mulMT(uint64_t* res, uint64_t* a, uint64_t* b, long l, long k = 0);
     void mulAndEqualMT(uint64_t* a, uint64_t* b, long l, long k = 0);
     void leftRotMT(uint64_t* res, uint64_t* a, long l, long rotSlots);
@@ -137,6 +139,11 @@ public:
     
     Ciphertext DecompKeySwitchMT(ExtCiphertext& cipher);
     
+    Ciphertext multByConstMT(Ciphertext& cipher, long cnst);
+    void multByConstAndEqualMT(Ciphertext& cipher, long cnst);
+    void multByPolyAndEqualMT(Ciphertext& cipher, uint64_t* poly);
+    Ciphertext multByConstMT(Ciphertext& cipher, double cnst);
+    void multByConstAndEqualMT(Ciphertext& cipher, double cnst);
     Ciphertext multMT(Ciphertext& cipher1, Ciphertext& cipher2);
     void multAndEqualMT(Ciphertext& cipher1, Ciphertext& cipher2);
     ExtCiphertext rawsquareMT(Ciphertext& cipher);
