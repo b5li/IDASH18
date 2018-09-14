@@ -30,7 +30,7 @@ public:
     /********************************************************************/
     //! Encryption functions for data
     
-	void encXData(Ciphertext& encYXData, Ciphertext& encXData, Ciphertext& encYData, Ciphertext*& enccovData, double* yData, double** xData, long factorDim, long sampleDim, long nXbatching, long nCovbatching, long nterms, long YXscaleBits, long covscaleBits, long nslots, long YXlvl, long Xlvl, long Ylvl, long Covlvl);
+	void encXData(Ciphertext& encYXData, Ciphertext& encXData, Ciphertext& encYData, Ciphertext*& enccovData, double* yData, double** xData, long factorDim, long sampleDim, long nXbatching, long nCovbatching, long nterms, long YXscaleBits, long covscaleBits, long nslots, long YXlvl, long Xlvl, long Ylvl, long Covlvl, long Covlvl1);
 
     void encryptSData(Ciphertext**& encSData, Ciphertext***& encSXData, double** xData, double** sData,  long factorDim, long sampleDim, long nsnp, long nencsnp, long nslots, long Slvl, long SXlvl) ;
     
@@ -51,40 +51,58 @@ public:
     void encNLGDiteration2(Ciphertext& encWData, Ciphertext& encVData, Ciphertext encYXData, Ciphertext encW0Data, Ciphertext encGrad0, Ciphertext encGrad2, uint64_t* poly, long fdimBits, long sdimBits, long xBatchingBits, double gamma, double eta);
     
     void encNLGDiteration_final(Ciphertext& encWData, Ciphertext& encVData, Ciphertext encYXData, Ciphertext encW0Data, Ciphertext encGrad2, uint64_t* poly, long fdimBits, long sdimBits, long xBatchingBits, double gamma);
-    
-    
-    void encZWData(Ciphertext& encZData, Ciphertext& encWData, Ciphertext& encW2Data, Ciphertext& encZWData, Ciphertext encBeta, Ciphertext encXData, Ciphertext encYData, uint64_t* poly, long fdimBits, long sdeg = 3, long scale = 1);
-    
-    void encTwoInverse(Ciphertext& encWinv, Ciphertext encPr1, Ciphertext encPr2, long steps);
-  
-    void encWinverse(Ciphertext&Winv, Ciphertext encPr);
+
     
 	/********************************************************************/
+    
+    void encZWData(Ciphertext& encWData, Ciphertext& encZWData, Ciphertext encBeta, Ciphertext encXData, Ciphertext encYData, uint64_t* poly, long fdimBits, long sdeg = 3, long scale = 1);
     
     void encAdjoint(Ciphertext& encDet, Ciphertext*& encAdj, Ciphertext encWData, Ciphertext* enccovData, long sdimBits, long nCovbatching);
     
     void encZXData(Ciphertext*& encZX, Ciphertext encXData, Ciphertext encZData, long sdimBits, long nbatching, long factorDim, long nslots);
     
+    void encVecSData(Ciphertext*& encZS, Ciphertext encZData, Ciphertext** encSData, uint64_t** poly0, uint64_t** poly, long sampleDim, long nencsnp, long nslots, long subblocksize, long niter, long nstep, long nblock, long* rot);
+    
+    void encVecSData(Ciphertext* encSWS, Ciphertext** encSWX, Ciphertext encWData,  Ciphertext**  encSData, Ciphertext*** encSXData, uint64_t** poly0, uint64_t** poly, long factorDim, long sampleDim, long nencsnp, long nslots, long subblocksize, long niter, long nstep, long nblock, long* rot);
+    
+    
+    void generateRepAuxPoly(uint64_t**& poly0, uint64_t**& poly, long nslots, long niter, long nstep, long* nblock, long* rot, long sdeg = 3);
+    
+    void fullReplicate16(Ciphertext*& res, Ciphertext encData, uint64_t** poly, long* rot);
+    
+    void sparseReplicate16(Ciphertext*& res, Ciphertext encData, uint64_t** poly, long nslots, long nvals, long* rot);
+    
+    
+    void extQuadForm(Ciphertext& res0, Ciphertext& res1, Ciphertext* encData0,  Ciphertext* encMatrix, Ciphertext* encData2, long factorDim);
+    
+
+    
+ 
+    /********************************************************************/
+    
     void encSXData(Ciphertext**& encSX, Ciphertext*** encSXData, long factorDim, long sampleDim, long nencsnp);
     
-    void encVecSData(Ciphertext*& encZS, Ciphertext encVData, Ciphertext** encSData, uint64_t** poly0, uint64_t** poly, long sampleDim, long nencsnp, long nslots, long subblocksize, long niter, long nstep, long nblock, long* rot);
+    void encZWData(Ciphertext& encZData, Ciphertext& encWData, Ciphertext& encW2Data, Ciphertext& encZWData, Ciphertext encBeta, Ciphertext encXData, Ciphertext encYData, uint64_t* poly, long fdimBits, long sdeg = 3, long scale = 1);
     
+    void encTwoInverse(Ciphertext& encWinv, Ciphertext encPr1, Ciphertext encPr2, long steps);
+    
+    void encWinverse(Ciphertext&Winv, Ciphertext encPr);
+    
+     
     void encVecMultipleSData(Ciphertext**& encZS, Ciphertext encVData, Ciphertext*** encSData, uint64_t** poly0, uint64_t** poly, long factorDim, long sampleDim, long nencsnp, long nslots, long subblocksize, long niter, long nstep, long nblock, long* rot);
     
     void encVecSData_new(Ciphertext*& encZS, Ciphertext encVData, Ciphertext** encSData, uint64_t** poly0, uint64_t** poly, long sampleDim, long nencsnp, long nslots, long subblocksize, long niter, long nstep, long nblock, long* rot);
     
     void encVecMultipleSData_new(Ciphertext**& encZS, Ciphertext encVData, Ciphertext*** encSData, uint64_t** poly0, uint64_t** poly, long factorDim, long sampleDim, long nencsnp, long nslots, long subblocksize, long niter, long nstep, long nblock, long* rot);
     
-    /********************************************************************/
-    void generateRepAuxPoly(uint64_t**& poly0, uint64_t**& poly, long nslots, long niter, long nstep, long* nblock, long* rot);
-    
-    void fullReplicate16(Ciphertext*& res, Ciphertext encData, uint64_t** poly, long* rot);
-    
-    void sparseReplicate16(Ciphertext*& res, Ciphertext encData, uint64_t** poly, long nslots, long nvals, long* rot);
     
     void extQuadForm(Ciphertext& res0, Ciphertext& res1, Ciphertext* encData0, Ciphertext* encData1, Ciphertext* encMatrix, Ciphertext* encData2, long factorDim);
     
+    void fullReplicate4(Ciphertext*& res, Ciphertext encData, uint64_t** poly, long* rot);
+    
+    void sparseReplicate4(Ciphertext*& res, Ciphertext encData, uint64_t** poly, long nslots, long nvals, long* rot);
  
+    
 };
 
 #endif /* CIPHERGD_H_ */

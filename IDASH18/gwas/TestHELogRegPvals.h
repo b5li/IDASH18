@@ -26,10 +26,7 @@ class TestHELRPvals
 {
 public:
 
-    static void testHELogReg(double*& zScore, double*& pVals, double* yData, double** xData, double** sData, long factorDim, long sampleDim, long nsnp, vector<string> snptag, string filename);
-    
-    static void testHELogReg_accuracy(double*& zScore, double*& pVals, double* yData, double** xData, double** sData, long factorDim, long sampleDim, long nsnp, long numIter, long sdeg, vector<string> snptag, string filename);
-
+    static void testFastHELogReg(double*& zScore, double*& pVals, double* yData, double** xData, double** sData, long factorDim, long sampleDim, long nsnp, vector<string> snptag, string filename);
     
     //static void testHELogReg_block8(double*& zScore, double*& pVals, double* yData, double** xData, double** sData, long factorDim, long sampleDim, long nsnp,  string filename);
 

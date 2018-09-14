@@ -27,10 +27,12 @@ int main(int argc, char **argv) {
 	
 	SetNumThreads(4);
     
-	string covariate_filename(argv[1]);     // path to covariate file
-    string snp_filename(argv[2]);           // path to snp file
+	string covariate_filename(argv[1]);     //! path to covariate file
+    string snp_filename(argv[2]);           //! path to snp file
+    //long numIter = atoi(argv[3]);            //! iteration of NLGD
+    //long testsigdeg = atoi(argv[4]);         //! degree of sigmoid for testing
     
-    double siglevel = 0.01;
+    double siglevel = 0.01;                   //! significane level
     
     cout << endl;
     cout << "+------------------------------------+" << endl;
@@ -71,15 +73,14 @@ int main(int argc, char **argv) {
     
     double* zScore = new double[nsnp];
     double* pVals = new double[nsnp];
-    
-    long numIter = 4;   //! iteration of NLGD
-    long testsigdeg = 7;
 
     
-    TestHELRPvals::testHELogReg(zScore, pVals, yData, xData, sData, factorDim, sampleDim, nsnp, snptag, "LogRegResult/HELogReg_Pvals.txt");
-   
-    //TestHELRPvals::testHELogReg_accuracy(zScore, pVals, yData, xData, sData, factorDim, sampleDim, nsnp, numIter, testsigdeg, snptag, "LogRegResult/HE_Pvals_deg7.txt");
-    //TestLRPvals::testLogRegGD(zScore, pVals, yData, xData, sData, factorDim, sampleDim, nsnp, 3, testsigdeg, numIter, 10,  1, "LogRegResult/Plain_Pvals_deg3.txt"); //! plain comp
+    TestHELRPvals::testFastHELogReg(zScore, pVals, yData, xData, sData, factorDim, sampleDim, nsnp, snptag, "LogRegResult/HE_Pvals.txt");    //! 0.00523846
+    
+    
+    //TestHELRPvals::testHELogReg(zScore, pVals, yData, xData, sData, factorDim, sampleDim, nsnp, snptag, "LogRegResult/HELogReg_Pvals.txt");   //! HE computation with (iter, deg) = (3, 3)
+    
+    //TestLRPvals::testLogRegGD(zScore, pVals, yData, xData, sData, factorDim, sampleDim, nsnp, 3, testsigdeg, numIter, 1,  1, "LogRegResult/Plain_Pvals_deg3.txt"); //! plain comp
     
  
     cout << "+------------------------------------+" << endl;
@@ -91,6 +92,7 @@ int main(int argc, char **argv) {
     SimpleDataFromFile(pVals_pt, "LogRegResult/Plain_Pvals.txt");
     
     double TP, FP, FN, TN;
+    
     pvalsError(TP, FP, FN, TN, pVals, pVals_pt, nsnp, siglevel);
     cout << "Error (TP, FP, FN, TN) of pt/ct : " << TP << "," <<  FP << ","  << FN << "," << TN << endl;
  
