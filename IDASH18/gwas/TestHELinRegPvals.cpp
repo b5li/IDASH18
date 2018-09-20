@@ -36,8 +36,8 @@
 #include "TestLinRegPvals.h"
 #include "CipherLinRegPvals.h"
 #include "TestHELinRegPvals.h"
-
-
+#include "Matrix.h"
+#include "sys.h"
 //!@ XData: fully packed in a single ciphertext
 //!@ Function: using decomposition KS -> logN = 13
 
@@ -130,9 +130,9 @@ void TestHEPvals::testFastHELinReg(double*& zScore, double*& pVals, double* yDat
         }
     }
     
-    cipherPvals.encryptSIMDXData(encYXData, enccovData, yData, xData, factorDim, sampleDim, sampleDim2, nXbatching, nCovbatching, nterms, scaleBits, nslots, YXlvl, Covlvl) ;
+    { TimerAnchor anchor("Encrypt X"); cipherPvals.encryptSIMDXData(encYXData, enccovData, yData, xData, factorDim, sampleDim, sampleDim2, nXbatching, nCovbatching, nterms, scaleBits, nslots, YXlvl, Covlvl) ;}
     
-    cipherPvals.encryptSData(encSData, encYSData, encSXData, yData, xData, sData, factorDim, sampleDim, nsnp, nencsnp, nslots, Slvl, YSlvl, SXlvl);
+    { TimerAnchor anchor("Encrypt S"); cipherPvals.encryptSData(encSData, encYSData, encSXData, yData, xData, sData, factorDim, sampleDim, nsnp, nencsnp, nslots, Slvl, YSlvl, SXlvl); }
     
     end = std::chrono::steady_clock::now();
     diff = end - start;
@@ -236,7 +236,6 @@ void TestHEPvals::testFastHELinReg(double*& zScore, double*& pVals, double* yDat
     scheme.subAndEqual(encYnorm, encWtYX);
     
 #if defined(__DEBUG_)
-    double dtemp
     cipherPvals.decSingleData(dtemp, encYnorm);
     cout << dtemp << endl;
 #endif
@@ -356,5 +355,372 @@ void TestHEPvals::testFastHELinReg(double*& zScore, double*& pVals, double* yDat
     delete[] Snorm;
     delete[] YSnorm1;
     delete[] Snorm1;
+}
+
+void TestHEPvals::testTrivialHELinReg(double*& zScore, double*& pVals, double* yData, double** xData, double** sData, long factorDim, long sampleDim, long nsnp, vector<string> snptag, string filename){
+    struct rusage usage;
+    long const memoryscale = (1 << 20);
+    
+    //! Parameters for approx-HE
+    long logp = 43;                    //! all the msg are scaled by "p", logq0 - logp = (final bits of precision)
+    long logq0 = 55;
+    long logp0 = 61;
+    
+    long logN = 13;
+    long nslots = (1<< (logN-1));      //! total number of plaintext slots
+    long L = 1;                        //! Only homomorphic addition is used so level is 1
+    long K = 1;
+    long h = 130;                      //! Hamming weight of sk
+    
+    //! Parameters for GWAS
+    long scaleBits = 4;                //! scale factor for covariance
+    long sampleDim2 = (1 << (long)ceil(log2(sampleDim)));   //! closet PoT
+    long sdimBits = (long)ceil(log2(sampleDim));            //! log2(sampleDim)
+    long factorDim2 = factorDim * factorDim;
+    long nXbatching = nslots/(sampleDim2 * factorDim);     //! replicated number of a user's Xdata in a single ciphertext
+    long nCovbatching = nslots/(sampleDim2 * 8);           //! replicated number of a user's (X^T * X) in a single ciphertext
+    long nencsnp = (long)ceil((double)nsnp/nslots);         //! number of ciphertexts for snp encryptions
+    long nterms = factorDim * (factorDim + 1)/2;
+    long logQ = logq0 + logp * (L - 1) + logp0;
+    cout << "(logN,logp,L,K,logQ,h) = ("  << logN << "," << logp << "," << L << "," << K << "," << logQ << "," << h << ")" << endl;
+    cout << "(dim,nslots,nencsnp) = ("  << factorDim << "," << nslots  << "," << nencsnp  << ")" << endl;
+    
+    cout << "+------------------------------------+" << endl;
+    cout << "|           Key Generation           |" << endl;
+    cout << "+------------------------------------+" << endl;
+    
+    auto start = chrono::steady_clock::now();
+    
+    Context context(logN, logp, L, K, logq0, logp0, h);
+    SecretKey secretKey(context);
+    Scheme scheme(secretKey, context);
+    ExtScheme extscheme(secretKey, context, scheme);
+    
+    //! evk for multiplication
+    extscheme.addDecompTwoKeys(secretKey);
+    extscheme.addDecompThreeKeys(secretKey);
+    
+    //! evk for rotation
+    extscheme.addDecompLeftRotKeys(secretKey);
+    //extscheme.addDecompRightRotKeys(secretKey);
+    
+    auto end = std::chrono::steady_clock::now();
+    auto diff = end - start;
+    double timeElapsed = chrono::duration <double, milli> (diff).count()/1000.0;
+    cout << "Scheme generation time= " << timeElapsed << " s" << endl;
+    int ret = getrusage(RUSAGE_SELF, &usage);
+    cout<< "Memory Usage : " << (double) usage.ru_maxrss/(memoryscale)  << "(GB)" << endl;
+    
+    CipherPvals cipherPvals(scheme, secretKey, extscheme);
+    
+    
+    cout << "+------------------------------------+" << endl;
+    cout << "|             Encryption             |" << endl;
+    cout << "+------------------------------------+" << endl;
+
+    start= chrono::steady_clock::now();
+
+    Matrix matY(sampleDim,yData);
+    Matrix matX(sampleDim,factorDim,xData);
+    Matrix matS(sampleDim,nsnp,sData);
+
+    Ciphertext encXData;   //! E( - X[1] - , ..., - X[n] -)
+    Ciphertext* enccovData = new Ciphertext[sampleDim];
+
+    //! encSData[i] = E( - S[i] - ), 1 <= i < nsnp
+    Ciphertext** encSData = new Ciphertext*[sampleDim];
+    //! encXSData[i][k][j] = E( - X[i][k] * S[i][j] - ), i in [sampleDim], j in [nsnp], k in [factorDim]
+    Ciphertext*** encXSData = new Ciphertext**[sampleDim];
+    //! encYSData[i][j] = E( - y[i] * S[i][j] - ), 
+    Ciphertext** encYSData = new Ciphertext*[sampleDim];
+
+    Ciphertext encYData;   //! E( - Y[1] - , ..., - Y[n] -)
+    Ciphertext* encXYData = new Ciphertext[sampleDim]; //! E( - X[l][1]*Y[l] -, ..., - X[l][k]*Y[l] -)
+    
+    for(long i = 0; i < sampleDim; ++i){
+       encSData[i] = new Ciphertext[nencsnp];
+       encXSData[i] = new Ciphertext*[factorDim];
+       encYSData[i] = new Ciphertext[nencsnp];
+       for(long k = 0; k < factorDim; ++k){
+          encXSData[i][k] = new Ciphertext[nencsnp];
+       }
+    }
+
+    {
+       TimerAnchor anchor("Encrypt X");
+       cipherPvals.encryptXData(encXData, enccovData, matY, matX, factorDim, sampleDim, nslots);
+    }
+    { 
+       TimerAnchor anchor("Encrypt S");
+       cipherPvals.encryptTrivialSData(encSData, encXSData, encYSData, matX, matS, matY, factorDim, sampleDim, nsnp, nencsnp, nslots);
+    }
+    { 
+       TimerAnchor anchor("Encrypt Y");
+       cipherPvals.encryptTrivialYData(encYData, encXYData, matX, matY, factorDim, sampleDim, nsnp, nencsnp, nslots);
+    }
+
+    end = std::chrono::steady_clock::now();
+    diff = end - start;
+    timeElapsed = chrono::duration <double, milli> (diff).count()/1000.0;
+    cout << "Encryption time (X and snp) = " << timeElapsed << " s" << endl;
+    ret = getrusage(RUSAGE_SELF, &usage);
+    cout<< "Memory Usage : " << (double) usage.ru_maxrss/(memoryscale)  << "(GB)" << endl;
+
+    cout << "+------------------------------------+" << endl;
+    cout << "|             Evaluation             |" << endl;
+    cout << "+------------------------------------+" << endl;
+    
+    // "+------------------------------------+"
+    //! Aggregation : (sampleDim+factorDim)*nencsnp + 2*sampleDim ADD
+    // "+------------------------------------+"
+    
+    start= chrono::steady_clock::now();
+    
+    //! encSX[factorDim][nencsnp]
+    Ciphertext* encS = new Ciphertext[nencsnp];
+    Ciphertext** encXS = new Ciphertext*[factorDim];
+    
+    //! (nencsnp*sampleDim ADD)
+    // encS[j] = \sum_{i=1}^n E{S[i][j]} # sum of j-th column of S
+    NTL_EXEC_RANGE(nencsnp, first, last);
+    for(long j = first; j < last; ++j){
+        encS[j] = encSData[0][j];
+        for(long i = 1; i < sampleDim; ++i){
+            scheme.addAndEqual(encS[j], encSData[i][j]);
+        }
+    }
+    NTL_EXEC_RANGE_END;
+
+    //! factorDim*nencsnp ADD
+    NTL_EXEC_RANGE(factorDim, first, last);
+    for(long i = first; i < last; ++i){
+        encXS[i] = new Ciphertext[nencsnp];
+        for(long j = 0; j < nencsnp; ++j){
+            encXS[i][j] = encXSData[0][i][j];
+            for(long l = 1; l < sampleDim; ++l){
+                scheme.addAndEqual(encXS[i][j], encXSData[l][i][j]);
+            }
+        }
+    }
+    NTL_EXEC_RANGE_END;
+
+    //! sampleDim ADD
+    Ciphertext encXY = encXYData[0];
+    for(long l = 1; l < sampleDim; l++) {
+       scheme.addAndEqual(encXY, encXYData[l]);
+    }
+
+    //! sampleDim ADD
+    Ciphertext enccov = enccovData[0];
+    for(long l = 1; l < sampleDim; l++) {
+       scheme.addAndEqual(enccov, enccovData[l]);
+    }
+
+    end = std::chrono::steady_clock::now();
+    diff = end - start;
+    timeElapsed = chrono::duration <double, milli> (diff).count()/1000.0;
+    cout << "Total Evaluation Timing = " << timeElapsed << " s" << endl;
+    ret = getrusage(RUSAGE_SELF, &usage);
+    cout<< "Memory Usage : " << (double) usage.ru_maxrss/(memoryscale)  << "(GB)" << endl;
+
+
+    cout << "+------------------------------------+" << endl;
+    cout << "|             Decryption             |" << endl;
+    cout << "+------------------------------------+" << endl;
+    
+    start = chrono::steady_clock::now();
+    Matrix decMatX(sampleDim,factorDim);
+    {
+       double * decX = 0;
+       cipherPvals.decVector(decX, encXData, sampleDim*factorDim);
+       decMatX.setData(decX);
+       delete [] decX;
+    }
+
+    Matrix decMatCov(factorDim,factorDim);
+    {
+       double * decCov = 0;
+       cipherPvals.decVector(decCov, enccov, factorDim*factorDim);
+       decMatCov.setData(decCov);
+       delete [] decCov;
+    }
+
+    Matrix ** decMatCovTerm = new Matrix*[sampleDim];
+    for(long l = 0; l < sampleDim; l++) {
+       decMatCovTerm[l] = new Matrix(factorDim, factorDim);
+       double * decCov = 0;
+       cipherPvals.decVector(decCov, enccovData[l], factorDim*factorDim);
+       decMatCovTerm[l]->setData(decCov);
+    }
+       
+    Matrix decMatSsum(1,nsnp);        // row vector, sum of jth column of S
+    {
+       long start = 0;
+       for(long j = 0; j < nencsnp; j++) {
+          double * decS = 0;
+          long const bound = (j==nencsnp-1)?(nsnp%nslots):nslots;
+          cipherPvals.decVector(decS, encS[j], bound);
+          for(long h = 0; h < bound; h++) {
+             decMatSsum.set(0, start+h, decS[h]);
+          }
+          start += bound;
+          delete [] decS;
+       }
+    }
+
+    Matrix decMatXS(factorDim, nsnp);
+    for(long i = 0; i < factorDim; i++) {
+       long start = 0;
+       for(long j = 0; j < nencsnp; j++) {
+          double * decXS = 0;
+          long const bound = (j==nencsnp-1)?(nsnp%nslots):nslots;
+          cipherPvals.decVector(decXS, encXS[i][j], bound);
+          for(long h = 0; h < bound; h++) {
+             decMatXS.set(i, start+h, decXS[h]);
+          }
+          delete [] decXS;
+          start += bound;
+       }
+    }
+
+    Matrix decMatYS(sampleDim, nsnp);
+    for(long i = 0; i < sampleDim; i++) {
+       long start = 0;
+
+       for(long j = 0; j < nencsnp; j++) {
+          double * decYS = 0;
+          long const bound = (j==nencsnp-1)?(nsnp%nslots):nslots;
+          cipherPvals.decVector(decYS, encYSData[i][j], bound);
+          for(long h = 0; h < bound; h++) {
+             decMatYS.set(i, start+h, decYS[h]);
+          }
+          delete [] decYS;
+          start += bound;
+       }
+    }
+
+    Matrix decMatYX(sampleDim, factorDim);
+    for(long l = 0; l < sampleDim; l++) {
+       double * decXY = 0;
+       cipherPvals.decVector(decXY, encXYData[l], factorDim);
+       for(long i = 0; i < factorDim; i++) {
+          decMatYX.set(l, i, decXY[i]);
+       }
+       delete [] decXY;
+    }
+
+    Matrix decMatXY(factorDim,1);  // column vector
+    {
+       double * decXY = 0;
+       cipherPvals.decVector(decXY, encXY, factorDim);
+       for(long h = 0; h < factorDim; h++) {
+          decMatXY.set(h, 0, decXY[h]);
+       }
+       delete [] decXY;
+    }
+
+    Matrix decMatY(sampleDim,1); // column vector
+    {
+       double * decY = 0;
+       cipherPvals.decVector(decY, encYData, sampleDim); // FixMe: leaks Y
+       for(long l = 0; l < sampleDim; l++) {
+          decMatY.set(l, 0, decY[l]);
+       }
+    }
+
+    end = std::chrono::steady_clock::now();
+    diff = end - start;
+    timeElapsed = chrono::duration <double, milli> (diff).count()/1000.0;
+    cout << "Decryption time = " << timeElapsed << " s" << endl;
+
+
+    cout << "+------------------------------------+" << endl;
+    cout << "|          Post-processing           |" << endl;
+    cout << "+------------------------------------+" << endl;
+    
+    start = chrono::steady_clock::now();
+
+    Matrix matCovInv = decMatCov.inv(); // (X^T X)^-1
+    Matrix matr = Matrix::mul(matCovInv, decMatXY); // r = (X^T X)^-1 * X^T y
+    Matrix matR = Matrix::mul(matCovInv, decMatXS); // R = (X^T X)^-1 * X^T S
+    Matrix matXXy = Matrix::mul(decMatX, matr); // X * (X^T X)^-1 * X^T y
+    Matrix matXXS = Matrix::mul(decMatX, matR); // X * (X^T X)^-1 * X^T S
+
+    Matrix matSXR(sampleDim,nsnp); // SXR[l,j] = S[l,j] * (XR)[i,j] = S[l,j] * XXS[i,j]
+
+    double *** decXS = new double**[sampleDim];
+    NTL_EXEC_RANGE(sampleDim, first, last);
+    for(long l = first; l < last; l++) {
+       decXS[l] = new double*[factorDim];
+       for(long i = 0; i < factorDim; i++) {
+          decXS[l][i] = new double[nsnp];
+          for(long j0 = 0; j0 < nencsnp; j0++) {
+             double * dSX = 0;
+             long const bound = (j0==nencsnp-1)?(nsnp%nslots):nslots;
+             cipherPvals.decVector(dSX, encXSData[l][i][j0], bound);
+             for(long h = 0; h < bound; h++) {
+                decXS[l][i][nslots*j0+h] = dSX[h];
+             }
+             delete [] dSX;
+          }
+       }
+       for(long i = 0; i < factorDim; i++) {
+          for(long j = 0; j < nsnp; j++) {
+             matSXR.plusAndEqual(l,j,decXS[l][i][j]*matR.at(i,j));
+          }
+       }
+    }
+    NTL_EXEC_RANGE_END;
+
+    double * snorm = new double[nsnp]; // Str2 = colSums(Str ^ 2)
+    NTL_EXEC_RANGE(nsnp, first, last);
+    for(long j = first; j < last; j++) {
+       snorm[j] = decMatSsum.at(0,j);    // colSums(S) of jth column
+       for(long i = 0; i < sampleDim; i++) {
+          snorm[j] += matXXS.at(i,j) * matXXS.at(i,j); // colSums(XXS^2) of jth column
+          snorm[j] -= 2 * matSXR.at(i,j);              // 2*colSums(S * {X(X^TX)^-1 X^T S})
+       }
+    }
+    NTL_EXEC_RANGE_END;
+
+    Matrix ystar = Matrix::sub(decMatY, matXXy);
+    double ynorm = 0;
+    for(long l = 0; l < sampleDim; l++) {
+       ynorm += ystar.at(l,0) * ystar.at(l,0);
+    }
+
+    double * ysnorm = new double[nsnp];
+    pVals = new double[nsnp];
+    NTL_EXEC_RANGE(nsnp, first, last);
+    for(long j = first; j < last; j++) {
+       double yss = 0;
+       for(long l = 0; l < sampleDim; l++) {
+          yss += decMatYS.at(l,j);
+          for(long i = 0; i < factorDim; i++) {
+             yss -= decMatYX.at(l,i) * matR.at(i,j);
+          }
+          double xrs = 0;
+          for(long i = 0; i < factorDim; i++) {
+             double xr = 0;
+             for(long h = 0; h < factorDim; h++) {
+                xr += decMatCovTerm[l]->at(i,h) * matR.at(h,j);
+             }
+             xrs += matr.at(i,0) * (decXS[l][i][j] - xr);
+          }
+          yss -= xrs;
+       }
+       ysnorm[j] = yss;
+       double b = ysnorm[j] / snorm[j];
+       double sig = (ynorm - b * b * snorm[j]) / (sampleDim - factorDim - 2);
+       double err = sqrt(sig / snorm[j]);
+       pVals[j] = pnorm(abs(b / err));
+    }
+    NTL_EXEC_RANGE_END;
+
+    end = std::chrono::steady_clock::now();
+    diff = end - start;
+    timeElapsed = chrono::duration <double, milli> (diff).count()/1000.0;
+    cout << "Post-processing time = " << timeElapsed << " s" << endl;
+    printPvalsToFile(pVals, snptag, filename, nsnp);
 }
 

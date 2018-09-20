@@ -39,7 +39,7 @@ OBJ= $(SRC:.cpp=.o)
 all: libHEGWAS.a
 
 clean:
-	rm -f *.o libHEGWAS.a testlinreg testlogreg || echo nothing to clean
+	rm -f *.o libHEGWAS.a testlinreg testlogreg testtrivial || echo nothing to clean
 	
 new:
 	make clean
@@ -51,13 +51,17 @@ new:
 #
 ###############################################################
 
-testlinreg:
+testlinreg: mainLinReg.cpp libHEGWAS.a
 	g++ -std=c++11 -O3 -I/usr/local/include $(TPFLAGS) -pthread mainLinReg.cpp  libHEGWAS.a -o testlinreg -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
 	/usr/bin/time ./testlinreg "idashdata/covariates.txt" "idashdata/snpMat.txt"
 
-testlogreg:
+testlogreg: mainLogReg.cpp libHEGWAS.a
 	g++ -std=c++11 -O3 -I/usr/local/include $(TPFLAGS) -pthread mainLogReg.cpp  libHEGWAS.a -o testlogreg -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
 	/usr/bin/time ./testlogreg "idashdata/covariates.txt" "idashdata/snpMat.txt"
+
+testtrivial: mainTrivialLinReg.cpp libHEGWAS.a
+	g++ -std=c++11 -O3 -I/usr/local/include $(TPFLAGS) -pthread mainTrivialLinReg.cpp  libHEGWAS.a -o testtrivial -L../lib -L/usr/local/lib -lHEAAN -lntl -lgmp -lm
+	/usr/bin/time ./testtrivial "idashdata/covariates.txt" "idashdata/snpMat.txt"
 
 obj: $(OBJ)
 

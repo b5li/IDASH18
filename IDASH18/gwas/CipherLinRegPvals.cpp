@@ -35,7 +35,7 @@
 #include "BasicTest.h"
 #include "TestLinRegPvals.h"
 #include "CipherLinRegPvals.h"
-
+#include "Matrix.h"
 
 //!@ encrypt an input value and generate a fully-packed ciphertext at level L
 //!@ Output: E(data, ..., data)
@@ -330,6 +330,153 @@ void CipherPvals::encryptSIMDXData(Ciphertext& encYXData, Ciphertext*& enccovDat
     delete[] temp;
     delete[] cov;
     delete[] xData2;
+}
+
+void CipherPvals::encryptXData(Ciphertext& encXData, Ciphertext*& enccovData, Matrix const& matY, Matrix const& matX, long factorDim, long sampleDim, long nslots) {
+    
+    double* temp = new double[nslots];
+    
+    // "+------------------------------------+"
+    //!  encryption of XData
+    // "+------------------------------------+"
+
+    //! encoding of XData
+    long p = 0;
+    for (long i = 0; i < sampleDim; ++i) {
+       for(long j = 0; j < factorDim; j++) {
+          temp[p++] = matX.data[i][j];
+       }
+    }
+    
+    //! encryption
+    encSparselyPackedVec(encXData, temp, sampleDim*factorDim, nslots, 1);
+
+    delete [] temp;
+    
+    // "+------------------------------------+"
+    //!  encryption of covariance
+    // "+------------------------------------+"
+   
+    long const covSizeEachLevel = factorDim*factorDim;
+    NTL_EXEC_RANGE(sampleDim, first, last);
+    for(long l = first; l < last; l++) {
+       double * temp2 = new double[covSizeEachLevel];
+       for(size_t i = 0; i < factorDim; i++) {
+          for(size_t h = 0; h < factorDim; h++) {
+             temp2[i*factorDim+h] = matX.at(l,i) * matX.at(l,h);
+          }
+       }
+       encFullyPackedVec(enccovData[l], temp2, covSizeEachLevel, 1);
+       delete [] temp2;
+    }
+    NTL_EXEC_RANGE_END;
+}
+
+
+// ! encSData: ciphertext for individual entries in S, packed
+//   encSData[i][j] = E{S[i][j']} ... E{S[i][j'+nencsnp-1]} packed in a ciphertext
+// ! encXSData: ciphertext for decomposed entries in X^T * S
+//   Notice that (X^T * S)_i,j = \sum_{l=1}^n X_l,i S_l,i
+//   So X^T * S = \sum_{l=1}^n XS_l, where (XS_l)_i,j = X_l,i S_l,j
+//   encXSData[l][i][j] = E{ X_l,i S_l,j }, l in [n], i in [k], j in [nencsnp] = [m/slots]
+//   where n = sampleDim
+//         k = # feature = factorDim
+//         m = # SNP
+void CipherPvals::encryptTrivialSData(Ciphertext**& encSData, Ciphertext***& encXSData, Ciphertext**& encYSData, Matrix const& matX, Matrix const& matS, Matrix const& matY, long factorDim, long sampleDim, long nsnp, long nencsnp, long nslots) {
+    long nslots1 = nsnp - (nencsnp-1) * nslots;   // number of slots in the final ctxts
+    NTL_EXEC_RANGE(sampleDim, first, last);
+    for (long l = first; l < last; ++l) {
+       /***************************************/
+       //! 1. encryption of sData (because s = 0/1)
+       long j = 0;
+       //! full slot
+       double * svec = matS.data[l];
+       for(long j2 = 0; j2 < nencsnp - 1; ++j2){ // index over packed j's
+          encFullyPackedVec(encSData[l][j2], svec, nslots, 1);
+          svec += nslots;
+       }
+       //! not full slot
+       encSparselyPackedVec(encSData[l][nencsnp-1], svec, nslots1, nslots, 1);
+       /***************************************/
+       //! 2. encryption of X^T * S
+       double * xsData = new double[nsnp]; // i-th row of X_l^T \otimes S_l
+       double * xsvec = 0;
+       for(long i = 0; i < factorDim; ++i){
+          for(long j0 = 0; j0 < nsnp; ++j0){
+             xsData[j0] = matX.at(l,i) * matS.at(l,j0);
+          }
+          j = 0;             // index over xsData
+          //! full slot
+          xsvec = xsData;
+          for(long j2 = 0; j2 < nencsnp - 1; ++j2){ // index over packed j's
+             encFullyPackedVec(encXSData[l][i][j2], xsvec, nslots, 1);
+             xsvec += nslots;
+          }
+          //! not full slot
+          encSparselyPackedVec(encXSData[l][i][nencsnp-1], xsvec, nslots1, nslots, 1);
+       }
+       delete [] xsData;
+
+       /***************************************/
+       //! 3. encryption of Y[l] * S[l][j]
+       double * fullvec = new double[nslots];
+       double * sparsevec = new double[nslots1];
+       j = 0;
+       for(long j2 = 0; j2 < nencsnp - 1; ++j2){ // index over packed j's
+          for(long j1 = 0; j1 < nslots; ++j1){  // index over slots
+             if(matY.at(l,0) == 1) {
+                fullvec[j1] = matS.at(l,j);      // y[l] * S[l][j]
+             } else {
+                fullvec[j1] = 0;                 // y[l] * S[l][j]
+             }
+             j++;
+          }
+          encFullyPackedVec(encYSData[l][j2], fullvec, nslots, 1);
+       }
+       //! not full slot
+       for(long j1 = 0; j1 < nslots1; ++j1){
+          if(matY.at(l,0) == 1) {
+             sparsevec[j1] = matS.at(l,j);      // y[l] * S[l][j]
+          } else {
+             sparsevec[j1] = 0;                 // y[l] * S[l][j]
+          }
+          j++;
+       }
+       encSparselyPackedVec(encYSData[l][nencsnp-1], sparsevec, nslots1, nslots, 1);
+       delete[] fullvec;
+       delete[] sparsevec;
+    }
+    NTL_EXEC_RANGE_END;
+    
+}
+
+
+void CipherPvals::encryptTrivialYData(Ciphertext& encYData, Ciphertext*& encXYData,  Matrix const& matX, Matrix const& matY,  long factorDim, long sampleDim, long nsnp, long nencsnp, long nslots) {
+   assert(matY.n <= nslots);
+   double* tempY = new double[nslots];
+   long nslots1 = nsnp - (nencsnp-1) * nslots;   // number of slots in the final ctxts
+
+   NTL_EXEC_RANGE(sampleDim, first, last);
+   for(long l = first; l < last; ++l) {
+      double * tempXY = new double[nslots];
+      if(matY.at(l,0) == 1) {
+         tempY[l] = 1;                   // column vector
+         for(long i = 0; i < factorDim; i++) {
+            tempXY[i] = matX.at(l,i);
+         }
+      } else {
+         tempY[l] = 0;                   // column vector
+         for(long i = 0; i < factorDim; i++) {
+            tempXY[i] = 0;
+         }
+      }
+      encSparselyPackedVec(encXYData[l], tempXY, factorDim, nslots, 1);
+      delete [] tempXY;
+   }
+   NTL_EXEC_RANGE_END;
+
+   encSparselyPackedVec(encYData, tempY, sampleDim, nslots, 1);
+   delete [] tempY;
 }
 
 void CipherPvals::decryptResult(double& Ynorm, double**& YSnorm, double**& Snorm, Ciphertext encYnorm, Ciphertext* encYSnorm, Ciphertext* encSnorm, long nencsnp, long nslots){

@@ -24,6 +24,7 @@
 #include "../src/SecretKey.h"
 
 #include "../src/ExtScheme.h"
+#include "Matrix.h"
 
 using namespace std;
 using namespace NTL;
@@ -60,7 +61,12 @@ public:
     void encryptSData(Ciphertext**& encSData, Ciphertext**& encYSData, Ciphertext***& encSXData,  double* yData, double** xData, double** sData,  long factorDim, long sampleDim, long nsnp, long nencsnp, long nslots, long Slvl, long YSlvl, long SXlvl) ;
     
     void encryptSIMDXData(Ciphertext& encYXData, Ciphertext*& enccovData, double* yData, double** xData, long factorDim, long sampleDim, long sampleDim2, long nXbatching, long nCovbatching, long nterms, long scaleBits, long nslots, long YXlvl, long Covlvl) ;
-    
+
+    void encryptXData(Ciphertext& encYXData, Ciphertext*& enccovData, Matrix const& matY, Matrix const& matX, long factorDim, long sampleDim, long nslots);
+
+    void encryptTrivialSData(Ciphertext**& encSData, Ciphertext***& encXSData, Ciphertext**& encYSData, Matrix const& matX, Matrix const& matS, Matrix const& matY, long factorDim, long sampleDim, long nsnp, long nencsnp, long nslots);
+
+    void encryptTrivialYData(Ciphertext& encYData, Ciphertext*& encXYData, Matrix const& matX, Matrix const& matY,  long factorDim, long sampleDim, long nsnp, long nencsnp, long nslots);
     
     void decryptResult(double& Ynorm, double**& YSnorm, double**& Snorm, Ciphertext encYnorm, Ciphertext* encYSnorm, Ciphertext* encSnorm, long nencsnp, long nslots);
     

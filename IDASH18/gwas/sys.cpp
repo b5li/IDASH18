@@ -21,3 +21,10 @@ MemoryUsage getMemoryUsage() {
    fclose(file);
    return mem;
 }
+
+void TimerAnchor::printTimeInfo() const {
+  auto diff = std::chrono::steady_clock::now()-start;
+  double timeElapsed = std::chrono::duration <double, std::milli> (diff).count()/1000.0;
+  std::cout << title << " Time: ";
+  std::cout << timeElapsed << std::endl;
+}

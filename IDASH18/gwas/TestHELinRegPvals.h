@@ -31,10 +31,9 @@ public:
 
     //! later applied to new KS (Decomp)
     static void testFastHELinReg(double*& zScore, double*& pVals, double* yData, double** xData, double** sData, long factorDim, long sampleDim, long nsnp, vector<string> snptag,  string filename);
-    
-    
+
+    static void testTrivialHELinReg(double*& zScore, double*& pVals, double* yData, double** xData, double** sData, long factorDim, long sampleDim, long nsnp, vector<string> snptag, string filename);
     
 };
-
 
 #endif /* TESTPVALUES_H_ */
