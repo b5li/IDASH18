@@ -332,26 +332,7 @@ void CipherPvals::encryptSIMDXData(Ciphertext& encYXData, Ciphertext*& enccovDat
     delete[] xData2;
 }
 
-void CipherPvals::encryptXData(Ciphertext& encXData, Ciphertext*& enccovData, Matrix const& matY, Matrix const& matX, long factorDim, long sampleDim, long nslots) {
-    
-    double* temp = new double[nslots];
-    
-    // "+------------------------------------+"
-    //!  encryption of XData
-    // "+------------------------------------+"
-
-    //! encoding of XData
-    long p = 0;
-    for (long i = 0; i < sampleDim; ++i) {
-       for(long j = 0; j < factorDim; j++) {
-          temp[p++] = matX.data[i][j];
-       }
-    }
-    
-    //! encryption
-    encSparselyPackedVec(encXData, temp, sampleDim*factorDim, nslots, 1);
-
-    delete [] temp;
+void CipherPvals::encryptXData(Ciphertext*& enccovData, Matrix const& matY, Matrix const& matX, long factorDim, long sampleDim, long nslots) {
     
     // "+------------------------------------+"
     //!  encryption of covariance

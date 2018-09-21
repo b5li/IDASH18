@@ -424,7 +424,6 @@ void TestHEPvals::testTrivialHELinReg(double*& zScore, double*& pVals, double* y
     Matrix matX(sampleDim,factorDim,xData);
     Matrix matS(sampleDim,nsnp,sData);
 
-    Ciphertext encXData;   //! E( - X[1] - , ..., - X[n] -)
     Ciphertext* enccovData = new Ciphertext[sampleDim];
 
     //! encSData[i] = E( - S[i] - ), 1 <= i < nsnp
@@ -448,7 +447,7 @@ void TestHEPvals::testTrivialHELinReg(double*& zScore, double*& pVals, double* y
 
     {
        TimerAnchor anchor("Encrypt X");
-       cipherPvals.encryptXData(encXData, enccovData, matY, matX, factorDim, sampleDim, nslots);
+       cipherPvals.encryptXData(enccovData, matY, matX, factorDim, sampleDim, nslots);
     }
     { 
        TimerAnchor anchor("Encrypt S");
@@ -478,6 +477,7 @@ void TestHEPvals::testTrivialHELinReg(double*& zScore, double*& pVals, double* y
     
     //! encSX[factorDim][nencsnp]
     Ciphertext* encS = new Ciphertext[nencsnp];
+    Ciphertext* encYS = new Ciphertext[nencsnp];
     Ciphertext** encXS = new Ciphertext*[factorDim];
     
     //! (nencsnp*sampleDim ADD)
@@ -485,8 +485,10 @@ void TestHEPvals::testTrivialHELinReg(double*& zScore, double*& pVals, double* y
     NTL_EXEC_RANGE(nencsnp, first, last);
     for(long j = first; j < last; ++j){
         encS[j] = encSData[0][j];
+        encYS[j] = encYSData[0][j];
         for(long i = 1; i < sampleDim; ++i){
             scheme.addAndEqual(encS[j], encSData[i][j]);
+            scheme.addAndEqual(encYS[j], encYSData[i][j]);
         }
     }
     NTL_EXEC_RANGE_END;
@@ -529,13 +531,6 @@ void TestHEPvals::testTrivialHELinReg(double*& zScore, double*& pVals, double* y
     cout << "+------------------------------------+" << endl;
     
     start = chrono::steady_clock::now();
-    Matrix decMatX(sampleDim,factorDim);
-    {
-       double * decX = 0;
-       cipherPvals.decVector(decX, encXData, sampleDim*factorDim);
-       decMatX.setData(decX);
-       delete [] decX;
-    }
 
     Matrix decMatCov(factorDim,factorDim);
     {
@@ -545,14 +540,6 @@ void TestHEPvals::testTrivialHELinReg(double*& zScore, double*& pVals, double* y
        delete [] decCov;
     }
 
-    Matrix ** decMatCovTerm = new Matrix*[sampleDim];
-    for(long l = 0; l < sampleDim; l++) {
-       decMatCovTerm[l] = new Matrix(factorDim, factorDim);
-       double * decCov = 0;
-       cipherPvals.decVector(decCov, enccovData[l], factorDim*factorDim);
-       decMatCovTerm[l]->setData(decCov);
-    }
-       
     Matrix decMatSsum(1,nsnp);        // row vector, sum of jth column of S
     {
        long start = 0;
@@ -565,6 +552,21 @@ void TestHEPvals::testTrivialHELinReg(double*& zScore, double*& pVals, double* y
           }
           start += bound;
           delete [] decS;
+       }
+    }
+
+    Matrix decMatYS(1,nsnp);          // row vector, y^T S
+    {
+       long start = 0;
+       for(long j = 0; j < nencsnp; j++) {
+          double * decYS = 0;
+          long const bound = (j==nencsnp-1)?(nsnp%nslots):nslots;
+          cipherPvals.decVector(decYS, encYS[j], bound);
+          for(long h = 0; h < bound; h++) {
+             decMatYS.set(0, start+h, decYS[h]);
+          }
+          start += bound;
+          delete [] decYS;
        }
     }
 
@@ -581,32 +583,6 @@ void TestHEPvals::testTrivialHELinReg(double*& zScore, double*& pVals, double* y
           delete [] decXS;
           start += bound;
        }
-    }
-
-    Matrix decMatYS(sampleDim, nsnp);
-    for(long i = 0; i < sampleDim; i++) {
-       long start = 0;
-
-       for(long j = 0; j < nencsnp; j++) {
-          double * decYS = 0;
-          long const bound = (j==nencsnp-1)?(nsnp%nslots):nslots;
-          cipherPvals.decVector(decYS, encYSData[i][j], bound);
-          for(long h = 0; h < bound; h++) {
-             decMatYS.set(i, start+h, decYS[h]);
-          }
-          delete [] decYS;
-          start += bound;
-       }
-    }
-
-    Matrix decMatYX(sampleDim, factorDim);
-    for(long l = 0; l < sampleDim; l++) {
-       double * decXY = 0;
-       cipherPvals.decVector(decXY, encXYData[l], factorDim);
-       for(long i = 0; i < factorDim; i++) {
-          decMatYX.set(l, i, decXY[i]);
-       }
-       delete [] decXY;
     }
 
     Matrix decMatXY(factorDim,1);  // column vector
@@ -643,77 +619,32 @@ void TestHEPvals::testTrivialHELinReg(double*& zScore, double*& pVals, double* y
     Matrix matCovInv = decMatCov.inv(); // (X^T X)^-1
     Matrix matr = Matrix::mul(matCovInv, decMatXY); // r = (X^T X)^-1 * X^T y
     Matrix matR = Matrix::mul(matCovInv, decMatXS); // R = (X^T X)^-1 * X^T S
-    Matrix matXXy = Matrix::mul(decMatX, matr); // X * (X^T X)^-1 * X^T y
-    Matrix matXXS = Matrix::mul(decMatX, matR); // X * (X^T X)^-1 * X^T S
 
-    Matrix matSXR(sampleDim,nsnp); // SXR[l,j] = S[l,j] * (XR)[i,j] = S[l,j] * XXS[i,j]
+    Matrix matyXXy = Matrix::crossprod(decMatXY, matr); // y^T X * (X^T X)^-1 * X^T y
+    Matrix matSXXS = Matrix::crossprod(decMatXS, matR); // S^T X * (X^T X)^-1 * X^T S
+    Matrix matyXXS = Matrix::crossprod(decMatXY, matR); // y^T X * (X^T X)^-1 * X^T S
 
-    double *** decXS = new double**[sampleDim];
-    NTL_EXEC_RANGE(sampleDim, first, last);
-    for(long l = first; l < last; l++) {
-       decXS[l] = new double*[factorDim];
-       for(long i = 0; i < factorDim; i++) {
-          decXS[l][i] = new double[nsnp];
-          for(long j0 = 0; j0 < nencsnp; j0++) {
-             double * dSX = 0;
-             long const bound = (j0==nencsnp-1)?(nsnp%nslots):nslots;
-             cipherPvals.decVector(dSX, encXSData[l][i][j0], bound);
-             for(long h = 0; h < bound; h++) {
-                decXS[l][i][nslots*j0+h] = dSX[h];
-             }
-             delete [] dSX;
-          }
-       }
-       for(long i = 0; i < factorDim; i++) {
-          for(long j = 0; j < nsnp; j++) {
-             matSXR.plusAndEqual(l,j,decXS[l][i][j]*matR.at(i,j));
-          }
-       }
-    }
-    NTL_EXEC_RANGE_END;
-
-    double * snorm = new double[nsnp]; // Str2 = colSums(Str ^ 2)
-    NTL_EXEC_RANGE(nsnp, first, last);
-    for(long j = first; j < last; j++) {
-       snorm[j] = decMatSsum.at(0,j);    // colSums(S) of jth column
-       for(long i = 0; i < sampleDim; i++) {
-          snorm[j] += matXXS.at(i,j) * matXXS.at(i,j); // colSums(XXS^2) of jth column
-          snorm[j] -= 2 * matSXR.at(i,j);              // 2*colSums(S * {X(X^TX)^-1 X^T S})
-       }
-    }
-    NTL_EXEC_RANGE_END;
-
-    Matrix ystar = Matrix::sub(decMatY, matXXy);
-    double ynorm = 0;
+    double ynorm = 0;           // crossprod(ystar, ystar)
     for(long l = 0; l < sampleDim; l++) {
-       ynorm += ystar.at(l,0) * ystar.at(l,0);
+       ynorm += decMatY.at(l,0); // same as y^2
     }
+    ynorm -= matyXXy.at(0,0);
 
-    double * ysnorm = new double[nsnp];
     pVals = new double[nsnp];
     NTL_EXEC_RANGE(nsnp, first, last);
+
     for(long j = first; j < last; j++) {
-       double yss = 0;
-       for(long l = 0; l < sampleDim; l++) {
-          yss += decMatYS.at(l,j);
-          for(long i = 0; i < factorDim; i++) {
-             yss -= decMatYX.at(l,i) * matR.at(i,j);
-          }
-          double xrs = 0;
-          for(long i = 0; i < factorDim; i++) {
-             double xr = 0;
-             for(long h = 0; h < factorDim; h++) {
-                xr += decMatCovTerm[l]->at(i,h) * matR.at(h,j);
-             }
-             xrs += matr.at(i,0) * (decXS[l][i][j] - xr);
-          }
-          yss -= xrs;
-       }
-       ysnorm[j] = yss;
-       double b = ysnorm[j] / snorm[j];
-       double sig = (ynorm - b * b * snorm[j]) / (sampleDim - factorDim - 2);
-       double err = sqrt(sig / snorm[j]);
-       pVals[j] = pnorm(abs(b / err));
+       double snorm = 0;        // crossprod(S[,j], S[,j])
+       double ysnorm = 0;       // crossprod(ystar, S[,j])
+
+       snorm += decMatSsum.at(0,j);                 // colSums(S) of jth column
+       snorm -= matSXXS.at(j,j);
+
+       ysnorm += decMatYS.at(0,j);
+       ysnorm -= matyXXS.at(0,j);
+       double z2 = (sampleDim - factorDim - 2) * ysnorm * ysnorm;
+       z2 /= (ynorm * snorm - ysnorm * ysnorm);
+       pVals[j] = pnorm(abs(sqrt(z2)));
     }
     NTL_EXEC_RANGE_END;
 

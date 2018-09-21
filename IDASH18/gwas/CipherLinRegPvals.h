@@ -62,7 +62,7 @@ public:
     
     void encryptSIMDXData(Ciphertext& encYXData, Ciphertext*& enccovData, double* yData, double** xData, long factorDim, long sampleDim, long sampleDim2, long nXbatching, long nCovbatching, long nterms, long scaleBits, long nslots, long YXlvl, long Covlvl) ;
 
-    void encryptXData(Ciphertext& encYXData, Ciphertext*& enccovData, Matrix const& matY, Matrix const& matX, long factorDim, long sampleDim, long nslots);
+    void encryptXData(Ciphertext*& enccovData, Matrix const& matY, Matrix const& matX, long factorDim, long sampleDim, long nslots);
 
     void encryptTrivialSData(Ciphertext**& encSData, Ciphertext***& encXSData, Ciphertext**& encYSData, Matrix const& matX, Matrix const& matS, Matrix const& matY, long factorDim, long sampleDim, long nsnp, long nencsnp, long nslots);
 

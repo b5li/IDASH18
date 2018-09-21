@@ -188,6 +188,22 @@ class Matrix {
       return M;
    }
 
+   static inline Matrix crossprod(Matrix const& A, Matrix const& B) {
+      assert(A.n == B.n);
+      Matrix M(A.m, B.m);
+      for(size_t i = 0; i < M.n; i++) {    // == A.m
+         for(size_t j = 0; j < M.m; j++) { // == B.m
+            double x = 0;
+            for(size_t k = 0; k < A.n; k++) {
+               x += A.data[k][i] * B.data[k][j];
+            }
+
+            M.data[i][j] = x;
+         }
+      }
+      return M;
+   }
+
    static inline Matrix add(Matrix const& A, Matrix const& B) {
       assert(A.n == B.n);
       assert(A.m == B.m);
