@@ -66,7 +66,7 @@ public:
 
     void encryptTrivialSData(Ciphertext**& encSData, Ciphertext***& encXSData, Ciphertext**& encYSData, Matrix const& matX, Matrix const& matS, Matrix const& matY, long factorDim, long sampleDim, long nsnp, long nencsnp, long nslots);
 
-    void encryptTrivialYData(Ciphertext& encYData, Ciphertext*& encXYData, Matrix const& matX, Matrix const& matY,  long factorDim, long sampleDim, long nsnp, long nencsnp, long nslots);
+    void encryptTrivialYData(Ciphertext& encYData, Ciphertext*& encXYData, Ciphertext*& enccovData, Matrix const& matX, Matrix const& matY,  long factorDim, long sampleDim, long nsnp, long nencsnp, long nslots);
     
     void decryptResult(double& Ynorm, double**& YSnorm, double**& Snorm, Ciphertext encYnorm, Ciphertext* encYSnorm, Ciphertext* encSnorm, long nencsnp, long nslots);
     

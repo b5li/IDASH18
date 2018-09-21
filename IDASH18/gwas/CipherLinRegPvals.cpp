@@ -332,28 +332,6 @@ void CipherPvals::encryptSIMDXData(Ciphertext& encYXData, Ciphertext*& enccovDat
     delete[] xData2;
 }
 
-void CipherPvals::encryptXData(Ciphertext*& enccovData, Matrix const& matY, Matrix const& matX, long factorDim, long sampleDim, long nslots) {
-    
-    // "+------------------------------------+"
-    //!  encryption of covariance
-    // "+------------------------------------+"
-   
-    long const covSizeEachLevel = factorDim*factorDim;
-    NTL_EXEC_RANGE(sampleDim, first, last);
-    for(long l = first; l < last; l++) {
-       double * temp2 = new double[covSizeEachLevel];
-       for(size_t i = 0; i < factorDim; i++) {
-          for(size_t h = 0; h < factorDim; h++) {
-             temp2[i*factorDim+h] = matX.at(l,i) * matX.at(l,h);
-          }
-       }
-       encFullyPackedVec(enccovData[l], temp2, covSizeEachLevel, 1);
-       delete [] temp2;
-    }
-    NTL_EXEC_RANGE_END;
-}
-
-
 // ! encSData: ciphertext for individual entries in S, packed
 //   encSData[i][j] = E{S[i][j']} ... E{S[i][j'+nencsnp-1]} packed in a ciphertext
 // ! encXSData: ciphertext for decomposed entries in X^T * S
@@ -431,14 +409,17 @@ void CipherPvals::encryptTrivialSData(Ciphertext**& encSData, Ciphertext***& enc
     
 }
 
-
-void CipherPvals::encryptTrivialYData(Ciphertext& encYData, Ciphertext*& encXYData,  Matrix const& matX, Matrix const& matY,  long factorDim, long sampleDim, long nsnp, long nencsnp, long nslots) {
+void CipherPvals::encryptTrivialYData(Ciphertext& encYData, Ciphertext*& encXYData, Ciphertext*& enccovData, Matrix const& matX, Matrix const& matY,  long factorDim, long sampleDim, long nsnp, long nencsnp, long nslots) {
    assert(matY.n <= nslots);
+
    double* tempY = new double[nslots];
-   long nslots1 = nsnp - (nencsnp-1) * nslots;   // number of slots in the final ctxts
+   long const nslots1 = nsnp - (nencsnp-1) * nslots;   // number of slots in the final ctxts
+   long const covSizeEachLevel = factorDim*factorDim;
 
    NTL_EXEC_RANGE(sampleDim, first, last);
    for(long l = first; l < last; ++l) {
+      /**************************************************/
+      //! encryption of Y and (X^T y)
       double * tempXY = new double[nslots];
       if(matY.at(l,0) == 1) {
          tempY[l] = 1;                   // column vector
@@ -453,6 +434,17 @@ void CipherPvals::encryptTrivialYData(Ciphertext& encYData, Ciphertext*& encXYDa
       }
       encSparselyPackedVec(encXYData[l], tempXY, factorDim, nslots, 1);
       delete [] tempXY;
+
+      /**************************************************
+      //!  encryption of covariance
+      double * tempCov = new double[covSizeEachLevel];
+      for(size_t i = 0; i < factorDim; i++) {
+         for(size_t h = 0; h < factorDim; h++) {
+            tempCov[i*factorDim+h] = matX.at(l,i) * matX.at(l,h);
+         }
+      }
+      encFullyPackedVec(enccovData[l], tempCov, covSizeEachLevel, 1);
+      delete [] tempCov;
    }
    NTL_EXEC_RANGE_END;
 

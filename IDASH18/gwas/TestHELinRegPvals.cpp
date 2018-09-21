@@ -445,17 +445,15 @@ void TestHEPvals::testTrivialHELinReg(double*& zScore, double*& pVals, double* y
        }
     }
 
-    {
-       TimerAnchor anchor("Encrypt X");
-       cipherPvals.encryptXData(enccovData, matY, matX, factorDim, sampleDim, nslots);
-    }
+
     { 
        TimerAnchor anchor("Encrypt S");
        cipherPvals.encryptTrivialSData(encSData, encXSData, encYSData, matX, matS, matY, factorDim, sampleDim, nsnp, nencsnp, nslots);
     }
+
     { 
        TimerAnchor anchor("Encrypt Y");
-       cipherPvals.encryptTrivialYData(encYData, encXYData, matX, matY, factorDim, sampleDim, nsnp, nencsnp, nslots);
+       cipherPvals.encryptTrivialYData(encYData, encXYData, enccovData, matX, matY, factorDim, sampleDim, nsnp, nencsnp, nslots);
     }
 
     end = std::chrono::steady_clock::now();
@@ -616,7 +614,7 @@ void TestHEPvals::testTrivialHELinReg(double*& zScore, double*& pVals, double* y
     
     start = chrono::steady_clock::now();
 
-    Matrix matCovInv = decMatCov.inv(); // (X^T X)^-1
+    Matrix matCovInv = decMatCov.inv();            // (X^T X)^-1
     Matrix matr = Matrix::mul(matCovInv, decMatXY); // r = (X^T X)^-1 * X^T y
     Matrix matR = Matrix::mul(matCovInv, decMatXS); // R = (X^T X)^-1 * X^T S
 
@@ -632,16 +630,14 @@ void TestHEPvals::testTrivialHELinReg(double*& zScore, double*& pVals, double* y
 
     pVals = new double[nsnp];
     NTL_EXEC_RANGE(nsnp, first, last);
-
     for(long j = first; j < last; j++) {
        double snorm = 0;        // crossprod(S[,j], S[,j])
        double ysnorm = 0;       // crossprod(ystar, S[,j])
-
        snorm += decMatSsum.at(0,j);                 // colSums(S) of jth column
        snorm -= matSXXS.at(j,j);
-
        ysnorm += decMatYS.at(0,j);
        ysnorm -= matyXXS.at(0,j);
+
        double z2 = (sampleDim - factorDim - 2) * ysnorm * ysnorm;
        z2 /= (ynorm * snorm - ysnorm * ysnorm);
        pVals[j] = pnorm(abs(sqrt(z2)));
