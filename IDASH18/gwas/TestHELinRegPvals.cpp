@@ -619,7 +619,6 @@ void TestHEPvals::testTrivialHELinReg(double*& zScore, double*& pVals, double* y
     Matrix matR = Matrix::mul(matCovAdj, decMatXS); // R = adj(X^T X) * X^T S
 
     Matrix matyXXy = Matrix::crossprod(decMatXY, matr); // y^T X * adj(X^T X) * X^T y
-    Matrix matSXXS = Matrix::crossprod(decMatXS, matR); // S^T X * adj(X^T X) * X^T S
     Matrix matyXXS = Matrix::crossprod(decMatXY, matR); // y^T X * adj(X^T X) * X^T S
 
     double ynorm = 0;            // det(X^T X) * crossprod(ystar, ystar)
@@ -632,12 +631,17 @@ void TestHEPvals::testTrivialHELinReg(double*& zScore, double*& pVals, double* y
     pVals = new double[nsnp];
     NTL_EXEC_RANGE(nsnp, first, last);
     for(long j = first; j < last; j++) {
+       double diagSXXS = 0;     // (j,j) entry of (S^T X) * adj(X^T X) * X^T S
+       for(long i = 0; i < factorDim; i++) {
+          diagSXXS += decMatXS.at(i,j) * matR.at(i,j);
+       }
        double snorm = 0;        // det(X^T X) * crossprod(S[,j], S[,j])
-       double ysnorm = 0;       // det(X^T X) * crossprod(ystar, S[,j])
        snorm += decMatCov.det()*decMatSsum.at(0,j);     // colSums(S) of jth column
-       snorm -= matSXXS.at(j,j);
+       snorm -= diagSXXS;
+       double ysnorm = 0;       // det(X^T X) * crossprod(ystar, S[,j])
        ysnorm += decMatCov.det()*decMatYS.at(0,j);
        ysnorm -= matyXXS.at(0,j);
+
        double z2 = (sampleDim - factorDim - 2) * ysnorm * ysnorm;
        z2 /= (ynorm * snorm - ysnorm * ysnorm);
        pVals[j] = pnorm(abs(sqrt(z2)));
