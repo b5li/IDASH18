@@ -435,7 +435,7 @@ void CipherPvals::encryptTrivialYData(Ciphertext& encYData, Ciphertext*& encXYDa
       encSparselyPackedVec(encXYData[l], tempXY, factorDim, nslots, 1);
       delete [] tempXY;
 
-      /**************************************************
+      /**************************************************/
       //!  encryption of covariance
       double * tempCov = new double[covSizeEachLevel];
       for(size_t i = 0; i < factorDim; i++) {
