@@ -11,6 +11,7 @@
 SecretKey::SecretKey(Context& context) {
 	sx = new uint64_t[context.N * (context.L + context.K)]();
     
-    context.sampleHWT(sx, context.L, context.K);
+    //context.sampleHWT(sx, context.L, context.K);
+    context.sampleZO(sx, 0, context.L, context.K);
 	context.NTTAndEqual(sx, context.L, context.K);
 }
