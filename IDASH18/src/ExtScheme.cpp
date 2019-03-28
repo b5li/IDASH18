@@ -850,7 +850,7 @@ Ciphertext ExtScheme::mult(Ciphertext& cipher1, Ciphertext& cipher2){
 
 void ExtScheme::multAndEqual(Ciphertext& cipher1, Ciphertext& cipher2){
     uint64_t* axbx1 = new uint64_t[cipher1.l << context.logN]();
-    uint64_t* axbx2 = new uint64_t[cipher1.l << context.logN]();
+    uint64_t* axbx2 = new uint64_t[cipher2.l << context.logN]();
     
     //uint64_t* axax = new uint64_t[cipher1.l << context.logN]();
     //uint64_t* bxbx = new uint64_t[cipher1.l << context.logN]();
