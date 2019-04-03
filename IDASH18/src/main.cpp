@@ -17,7 +17,7 @@ int main() {
     
 //    ExtTestScheme::testProdDecompKS(13, 5, 50, 0);
     
-   ExtTestScheme::testDecompRotate(14, 4, 1, 3, 40, 1);   // rot by (1 << 1), rot by 3
+   ExtTestScheme::testDecompRotate(15, 16, 1, 3, 40, 1);   // rot by (1 << 1), rot by 3
     
 
 	return 0;

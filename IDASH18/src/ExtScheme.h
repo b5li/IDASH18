@@ -31,7 +31,7 @@ static long THREEMULTIPLICATION = 0;
 
 
 class ExtScheme {
-public:
+    public:
 
     Context& context;
     
@@ -131,7 +131,7 @@ public:
     void leftRotMT(uint64_t* res, uint64_t* a, long l, long rotSlots);
     void squareMT(uint64_t* res, uint64_t* a, long l, long k = 0);
     void squareAndEqualMT(uint64_t* a, long l, long k = 0);
-    
+    void reScaleAndEqualMT(uint64_t*& a, long l);
     
     void rnsDecompMT(uint64_t*& res, uint64_t* a, long i, long l);
     void mulDecompKeyMT(uint64_t*& axtmp, uint64_t*& bxtmp, uint64_t* axi, Key keys, long l);
@@ -141,18 +141,40 @@ public:
     
     Ciphertext multByConstMT(Ciphertext& cipher, long cnst);
     void multByConstAndEqualMT(Ciphertext& cipher, long cnst);
+    
+    ExtCiphertext multByConstMT(ExtCiphertext& cipher, long cnst);
+    void multByConstAndEqualMT(ExtCiphertext& cipher, long cnst);
+    
+    Ciphertext multByPolyMT(Ciphertext& cipher, uint64_t* poly);
     void multByPolyAndEqualMT(Ciphertext& cipher, uint64_t* poly);
+    
     Ciphertext multByConstMT(Ciphertext& cipher, double cnst);
     void multByConstAndEqualMT(Ciphertext& cipher, double cnst);
+    
+    ExtCiphertext multByConstMT(ExtCiphertext& cipher, double cnst);
+    void multByConstAndEqualMT(ExtCiphertext& cipher, double cnst);
+    
     Ciphertext multMT(Ciphertext& cipher1, Ciphertext& cipher2);
     void multAndEqualMT(Ciphertext& cipher1, Ciphertext& cipher2);
+    
     ExtCiphertext rawsquareMT(Ciphertext& cipher);
     Ciphertext squareMT(Ciphertext& cipher);
     void squareAndEqualMT(Ciphertext& cipher);
+    
+    void reScaleByAndEqualMT(Ciphertext& cipher, long dl);
     void reScaleByAndEqualMT(ExtCiphertext& cipher, long dl);
     
     Ciphertext leftRotateFastMT(Ciphertext& cipher, long rotSlots);
     Ciphertext rightRotateFastMT(Ciphertext& cipher, long rotSlots);
+    
+    void leftRotateFastAndEqualMT(Ciphertext& cipher, long rotSlots);
+    void rightRotateFastAndEqualMT(Ciphertext& cipher, long rotSlots);
+    
+    Ciphertext leftRotateMT(Ciphertext& cipher, long rotSlots);
+    Ciphertext rightRotateMT(Ciphertext& cipher, long rotSlots);
+    
+    void leftRotateAndEqualMT(Ciphertext& cipher, long rotSlots);
+    void rightRotateAndEqualMT(Ciphertext& cipher, long rotSlots);
     
 };
 

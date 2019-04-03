@@ -117,7 +117,7 @@ public:
 	uint64_t* pccoeff;
 	uint64_t* p2hcoeff;
 
-	Context(long logN, long logp, long L, long K, long logq0 = 60, long logp0 = 61, long h = 64, double sigma = 3.2);
+	Context(long logN, long logp, long L, long K, long logq0 = 60, long logp0 = 61, long h = 0, double sigma = 3.2);
 
 	void arrayBitReverse(complex<double>* vals, const long size);
 	void arrayBitReverse(uint64_t* vals, const long size);

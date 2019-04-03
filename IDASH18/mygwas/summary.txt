@@ -1,0 +1,4 @@
+04/02: 
+gammaUp = 1.0 -> 3.0 
+Context: does not take as input Hamming weight 
+GD_niter = 1, 2, 3
