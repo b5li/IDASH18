@@ -1,0 +1,151 @@
+HE vs gold standard
+
+Using LogRegResult/HE_pvals_iter1.txt
+threshold = 0.00001
+tp = 0.9951749, fp = 0.0005094763, fn = 0.00482509, tn = 0.9994905
+precision = 0.9939759
+f1score   = 0.994575
+
+Using LogRegResult/HE_pvals_iter3.txt
+threshold = 0.00001
+tp = 1, fp = 0.003464439, fn = 0, tn = 0.9965356
+precision = 0.9606025
+f1score   = 0.9799054
+
+
+Using test/test1/HE_pvals_iter1.txt
+threshold = 0.00001
+tp = 0.9951749, fp = 0.0005094763, fn = 0.00482509, tn = 0.9994905
+precision = 0.9939759
+f1score   = 0.994575
+
+Using test/test1/HE_pvals_iter2.txt
+threshold = 0.00001
+tp = 1, fp = 0.0005094763, fn = 0, tn = 0.9994905
+precision = 0.9940048
+f1score   = 0.9969934
+
+Using test/test1/HE_pvals_iter3.txt
+threshold = 0.00001
+tp = 1, fp = 0.003464439, fn = 0, tn = 0.9965356
+precision = 0.9606025
+f1score   = 0.9799054
+
+==================================================
+
+HE vs semi parallel
+
+Using LogRegResult/HE_pvals_iter1.txt
+threshold = 0.00001
+tp = 0.9662398, fp = 0, fn = 0.03376019, tn = 1
+precision = 1
+f1score   = 0.9828301
+
+Using LogRegResult/HE_pvals_iter3.txt
+threshold = 0.00001
+tp = 0.9988358556461, fp = 0.000511038430089943, fn = 0.00116414435389988, tn = 0.99948896156991
+precision = 0.960602549246813
+f1score   = 0.979346191048249
+
+Using test/test1/HE_pvals_iter1.txt
+threshold = 0.00001
+tp = 0.966239813736903, fp = 0, fn = 0.0337601862630966, tn = 1
+precision = 0.993975903614458
+f1score   = 0.979911632649411
+
+Using test/test1/HE_pvals_iter2.txt
+threshold = 0.00001
+tp = 0.970896391152503, fp = 0, fn = 0.0291036088474971, tn = 1
+precision = 0.99400479616307
+f1score   = 0.982314709373737
+
+Using test/test1/HE_pvals_iter3.txt
+threshold = 0.00001
+tp = 0.9988358556461, fp = 0.000511038430089943, fn = 0.00116414435389988, tn = 0.99948896156991
+precision = 0.960602549246813
+f1score   = 0.979346191048249
+
+
+==================================================
+
+DeLong's test
+
+Using LogRegResult/HE_pvals_iter1.txt
+
+pmean_sp = 
+          [,1]
+[1,] 0.4705432
+[2,] 0.5447985
+[3,] 0.5595245
+[4,] 0.8372635
+
+pdev_sp = 
+          [,1]
+[1,] 0.2478212
+[2,] 0.3178795
+[3,] 0.2600369
+[4,] 0.2626431
+
+Using LogRegResult/HE_pvals_iter3.txt
+
+pmean_sp =
+          [,1]
+[1,] 0.5605698
+[2,] 0.4779779
+[3,] 0.6410080
+[4,] 0.9479500
+
+pdev_sp =
+          [,1]
+[1,] 0.3059601
+[2,] 0.2266907
+[3,] 0.3219501
+[4,] 0.1645965
+
+Using test/test1/HE_pvals_iter1.txt
+
+pmean_sp =
+          [,1]
+[1,] 0.3837777
+[2,] 0.4564846
+[3,] 0.6100821
+[4,] 0.8533738
+
+pdev_sp =
+          [,1]
+[1,] 0.1882735
+[2,] 0.2134344
+[3,] 0.2866916
+[4,] 0.2364460
+
+Using test/test1/HE_pvals_iter2.txt
+
+pmean_sp =
+          [,1]
+[1,] 0.3294574
+[2,] 0.5014572
+[3,] 0.5923944
+[4,] 0.8959000
+
+pdev_sp =
+          [,1]
+[1,] 0.2120578
+[2,] 0.2147942
+[3,] 0.2866549
+[4,] 0.2194620
+
+Using test/test1/HE_pvals_iter3.txt
+
+pmean_sp =
+          [,1]
+[1,] 0.4016704
+[2,] 0.6415981
+[3,] 0.7530161
+[4,] 1.0000000
+
+pdev_sp =
+          [,1]
+[1,] 0.3037181
+[2,] 0.2731609
+[3,] 0.2872589
+[4,] 0.0000000
