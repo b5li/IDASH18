@@ -489,7 +489,8 @@ void TestHELRPvals::new_testFastHELogReg(double*& zScore, double*& pVals, double
     
     end = std::chrono::steady_clock::now();
     timeElapsed = chrono::duration <double, milli> (end - start).count()/1000.0;
-    cout << "Timing = " << timeElapsed << " s" << endl;
+    ret = getrusage(RUSAGE_SELF, &usage);
+    cout << "Timing = " << timeElapsed << "(s) , Mem : " << (double) usage.ru_maxrss/(memoryscale)  << "(GB)" << endl;
     
     cout << "+------------------------------------+" << endl;
     cout << "|           Reconstruction           |" << endl;
@@ -532,7 +533,8 @@ void TestHELRPvals::new_testFastHELogReg(double*& zScore, double*& pVals, double
     
     end = std::chrono::steady_clock::now();
     timeElapsed = chrono::duration <double, milli> (end - start).count()/1000.0;
-    cout << "Timing = " << timeElapsed << " s" << endl;
+    ret = getrusage(RUSAGE_SELF, &usage);
+    cout << "Timing = " << timeElapsed << "(s) , Mem : " << (double) usage.ru_maxrss/(memoryscale)  << "(GB)" << endl;
     
 //    printvectorToFile(ZSnorm1, "LogRegResult/HE_ZSnorm.txt", nsnp);
 //    printvectorToFile(Snorm1, "LogRegResult/HE_Snorm.txt", nsnp);
