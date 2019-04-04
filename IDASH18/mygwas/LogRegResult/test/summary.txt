@@ -450,4 +450,59 @@ pdev_sp =
 [3,] 0.2872589
 [4,] 0.0000000
 
+==================================================
 
+F-scores
+
+> computeFScores("HE_pvals_iter1.txt",10^-2)
+[1] "cutoff=0.01"
+[1] "F1 vs gs = 0.981793198213672"
+[1] "F1 vs sp = 0.980653769179453"
+> computeFScores("HE_pvals_iter1.txt",10^-3)
+[1] "cutoff=0.001"
+[1] "F1 vs gs = 0.987783595113438"
+[1] "F1 vs sp = 0.974946921443737"
+> computeFScores("HE_pvals_iter1.txt",10^-4)
+[1] "cutoff=1e-04"
+[1] "F1 vs gs = 0.987707108498129"
+[1] "F1 vs sp = 0.974545454545455"
+> computeFScores("HE_pvals_iter1.txt",10^-5)
+[1] "cutoff=1e-05"
+[1] "F1 vs gs = 0.994575045207957"
+[1] "F1 vs sp = 0.98283007696862"
+
+
+> computeFScores("HE_pvals_iter2.txt",10^-2)
+[1] "cutoff=0.01"
+[1] "F1 vs gs = 0.980808773132282"
+[1] "F1 vs sp = 0.983028286189684"
+> computeFScores("HE_pvals_iter2.txt",10^-3)
+[1] "cutoff=0.001"
+[1] "F1 vs gs = 0.988725065047702"
+[1] "F1 vs sp = 0.981004643309413"
+> computeFScores("HE_pvals_iter2.txt",10^-4)
+[1] "cutoff=1e-04"
+[1] "F1 vs gs = 0.988835725677831"
+[1] "F1 vs sp = 0.97984496124031"
+> computeFScores("HE_pvals_iter2.txt",10^-5)
+[1] "cutoff=1e-05"
+[1] "F1 vs gs = 0.996993385447986"
+[1] "F1 vs sp = 0.985233313644418"
+
+
+> computeFScores("HE_pvals_iter3.txt",10^-2)
+[1] "cutoff=0.01"
+[1] "F1 vs gs = 0.971024258760108"
+[1] "F1 vs sp = 0.996399345335516"
+> computeFScores("HE_pvals_iter3.txt",10^-3)
+[1] "cutoff=0.001"
+[1] "F1 vs gs = 0.974031502767135"
+[1] "F1 vs sp = 0.997512437810945"
+> computeFScores("HE_pvals_iter3.txt",10^-4)
+[1] "cutoff=1e-04"
+[1] "F1 vs gs = 0.97288842544317"
+[1] "F1 vs sp = 0.996957403651116"
+> computeFScores("HE_pvals_iter3.txt",10^-5)
+[1] "cutoff=1e-05"
+[1] "F1 vs gs = 0.980484920165583"
+[1] "F1 vs sp = 0.997094712376525"
